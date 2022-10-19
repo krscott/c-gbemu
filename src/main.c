@@ -1,12 +1,13 @@
-// Using SDL and standard IO
+
+#include "gbemu/cart.h"
+
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
-// Screen dimension constants
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
 
-int main(int argc, char *args[])
+void window(void)
 {
     // The window we'll be rendering to
     SDL_Window *window = NULL;
@@ -48,6 +49,26 @@ int main(int argc, char *args[])
 
     // Quit SDL subsystems
     SDL_Quit();
+}
+
+int main(int argc, char *args[])
+{
+    char *filename = NULL;
+
+    if (argc == 2)
+    {
+        filename = args[1];
+    }
+
+    const Allocator allocator = std_allocator();
+
+    if (filename)
+    {
+        CartLoadErr err;
+        CartRom cart = alloc_cart_from_file(allocator, filename, &err);
+    }
+
+    // window();
 
     return 0;
 }
