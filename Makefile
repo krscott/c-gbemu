@@ -29,8 +29,10 @@ $(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LFLAGS) -c $< -o $@
 
+# On github windows CI, need to call full filename with '.exe'
+TEST_EXE_BIN := $(shell find . -name '$(TEST_EXE)*')
 check: $(TEST_EXE)
-	$(TEST_EXE)
+	$(TEST_EXE_BIN)
 
 .PHONY: clean
 clean:

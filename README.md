@@ -1,6 +1,8 @@
 # c-gbemu
 
-Gameboy emulator written in C
+![build status](https://github.com/krscott/c-gbemu/actions/workflows/c.yml/badge.svg)
+
+A Work-in-Progress Gameboy emulator written in C.
 
 ## Windows Setup
 
