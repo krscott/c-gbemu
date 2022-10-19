@@ -1,0 +1,86 @@
+name: C CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+#  build-linux:
+#    runs-on: ubuntu-latest
+#
+#    steps:
+#    - run: sudo apt-get install libsdl2-dev
+#    - uses: actions/checkout@v3
+#    - name: make
+#      run: make
+#    - name: make check
+#      run: make check
+#    - name: zip release
+#      uses: TheDoctor0/zip-release@0.6.2
+#      with:
+#        type: 'zip'
+#        filename: 'c-gbemu-linux.zip'
+#        path: res/ game
+#    - uses: "marvinpinto/action-automatic-releases@latest"
+#      with:
+#        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+#        automatic_release_tag: "latest-linux"
+#        prerelease: false
+#        title: "Latest Linux Build"
+#        files: |
+#          c-gbemu-linux.zip
+          
+  build-windows:
+    runs-on: windows-latest
+    
+    defaults:
+      run:
+        shell: msys2 {0}
+        
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: setup msys2
+      uses: msys2/setup-msys2@v2
+      with:
+       update: true
+       install: >-
+          base-devel
+          git
+          make
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-SDL2
+          mingw-w64-x86_64-SDL2_mixer
+          mingw-w64-x86_64-SDL2_image
+          mingw-w64-x86_64-SDL2_ttf
+          mingw-w64-x86_64-SDL2_net
+          
+    - name: make
+      run: make
+      
+    - name: make check
+      run: make check
+      
+    - name: Download SDL2
+      uses: albin-johansson/download-sdl2@v2
+      with:
+        sources_destination: .
+        binaries_destination: .
+
+    - name: zip release
+      uses: TheDoctor0/zip-release@0.6.2
+      with:
+        type: 'zip'
+        filename: 'c-gbemu-windows.zip'
+        path: c-gbemu.exe *.dll
+        
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest-windows"
+        prerelease: false
+        title: "Latest Windows Build"
+        files: |
+          c-gbemu-windows.zip 
