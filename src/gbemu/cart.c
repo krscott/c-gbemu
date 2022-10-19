@@ -5,14 +5,14 @@
 
 CartRom cart_empty()
 {
-    CartRom cart = {
+    const CartRom cart = {
         .size = 0,
         .data = NULL,
     };
     return cart;
 }
 
-CartHeaderView *cart_header(CartRom cart)
+const CartHeaderView *cart_header(const CartRom cart)
 {
     if (cart.size == 0)
     {
@@ -61,7 +61,7 @@ static const char *ROM_TYPES[] = {
     "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
 };
 
-const char *cart_type_name(CartHeaderView *header)
+const char *cart_type_name(const CartHeaderView *header)
 {
     if (header->cart_type <= 0x22)
     {
@@ -134,7 +134,7 @@ static const char *LICENSEE_CODE[0xA5] = {
     [0x99] = "Pack in soft",
     [0xA4] = "Konami (Yu-Gi-Oh!)"};
 
-const char *cart_licensee_name(CartHeaderView *header)
+const char *cart_licensee_name(const CartHeaderView *header)
 {
     if (header->old_licensee_code == 0x33)
     {
@@ -152,7 +152,7 @@ const char *cart_licensee_name(CartHeaderView *header)
     return "UNKNOWN";
 }
 
-CartRom alloc_cart_from_file(Allocator allocator, char *filename, CartLoadErr *err)
+CartRom alloc_cart_from_file(const Allocator allocator, const char *filename, CartLoadErr *err)
 {
     assert(filename);
 
@@ -197,7 +197,7 @@ CartRom alloc_cart_from_file(Allocator allocator, char *filename, CartLoadErr *e
         .data = cart_data,
     };
 
-    CartHeaderView *header = cart_header(cart);
+    const CartHeaderView *header = cart_header(cart);
 
     infof("Filename : %s", filename);
     infof("Title    : %.*s", 15, header->title);
@@ -217,14 +217,19 @@ CartRom alloc_cart_from_file(Allocator allocator, char *filename, CartLoadErr *e
     return cart;
 }
 
-bool cart_is_valid_header(CartRom cart)
+bool cart_is_valid_header(const CartRom cart)
 {
+    if (!cart.size || !cart.data)
+    {
+        return false;
+    }
+
     u16 chk = 0;
     for (u16 addr = 0x0134; addr <= 0x014C; ++addr)
     {
         chk = chk - cart.data[addr] - 1;
     }
-    CartHeaderView *header = cart_header(cart);
+    const CartHeaderView *header = cart_header(cart);
 
     return (u8)(chk & 0xff) == header->checksum;
 }
