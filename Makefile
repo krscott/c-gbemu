@@ -29,6 +29,9 @@ $(BUILD_DIR)/%.c.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LFLAGS) -c $< -o $@
 
+check: $(TEST_EXE)
+	$(TEST_EXE)
+
 .PHONY: clean
 clean:
 	rm -r $(BUILD_DIR)
