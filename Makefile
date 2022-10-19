@@ -4,7 +4,7 @@ BUILD_DIR := build
 SRC_DIR := src
 
 CFLAGS := -O2
-LFLAGS := -Iinclude -Llib -lmingw32 -lSDL2main -lSDL2
+LFLAGS := -Iinclude -lmingw32 -lSDL2main -lSDL2
 
 # Get all .c files
 SRCS := $(shell find $(SRC_DIR) -name '*.c')

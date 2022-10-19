@@ -2,18 +2,26 @@
 
 Gameboy emulator written in C
 
-## Windows
+## Windows Setup
 
-Install
-- MinGW64 gcc (e.g. [VSCode guide](https://code.visualstudio.com/docs/cpp/config-mingw))
-- make (e.g. [chocolatey](https://community.chocolatey.org/packages/make))
+### Dependencies
 
-Add SDL2 lib
-- Download [SDL2 devel mingw](https://github.com/libsdl-org/SDL/releases/download/release-2.24.1/SDL2-devel-2.24.1-mingw.zip) archive
-- Copy `x86_64-w64-mingw32/lib` folder into project root
-- Copy `x86_64-w64-mingw32/bin/SDL2.dll` into project root
+**gcc**
 
-Build
+e.g. via msys, see [VSCode guide](https://code.visualstudio.com/docs/cpp/config-mingw)
+
+**make**
+
+e.g. via [chocolatey](https://community.chocolatey.org/packages/make)
+
+**SDL**
+
+e.g. via [msys2](https://www.msys2.org/) again:
+```
+pacman -S mingw64/mingw-w64-x86_64-SDL2 mingw64/mingw-w64-x86_64-SDL2_mixer mingw64/mingw-w64-x86_64-SDL2_image mingw64/mingw-w64-x86_64-SDL2_ttf mingw64/mingw-w64-x86_64-SDL2_net
+```
+
+### Build
 ```
 make
 ```
