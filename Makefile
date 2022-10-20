@@ -17,10 +17,10 @@ LFLAGS := -Iinclude -Isrc -lmingw32 -lSDL2main -lSDL2
 # Get all .c files
 SRCS := $(shell find $(SRC_DIR) -name '*.c')
 
-# String substitution: src/hello.c -> build/src/hello.c.o
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-OBJ_MAIN := $(SRC_MAIN:%=$(BUILD_DIR)/%.o)
-OBJ_TEST := $(SRC_TEST:%=$(BUILD_DIR)/%.o)
+# String substitution: src/hello.c -> build/src/hello.c.debug.o
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.$(BUILD).o)
+OBJ_MAIN := $(SRC_MAIN:%=$(BUILD_DIR)/%.$(BUILD).o)
+OBJ_TEST := $(SRC_TEST:%=$(BUILD_DIR)/%.$(BUILD).o)
 
 all: $(EXE) $(TEST_EXE)
 
@@ -30,7 +30,7 @@ $(EXE): $(OBJS) $(OBJ_MAIN)
 $(TEST_EXE): $(OBJS) $(OBJ_TEST)
 	$(CC) $(OBJS) $(OBJ_TEST) $(LFLAGS) -o $(TEST_EXE)
 
-$(BUILD_DIR)/%.c.o: %.c
+$(BUILD_DIR)/%.c.$(BUILD).o: %.c
 	mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) $(LFLAGS) -c $< -o $@
 

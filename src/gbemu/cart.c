@@ -303,5 +303,10 @@ bool cart_is_valid_header(const CartRom *cart) {
 
 u8 cart_read(const CartRom *cart, u16 address) {
     assert(cart);
+
+    if (address >= cart->size) {
+        return 0;
+    }
+
     return cart->data[address];
 }

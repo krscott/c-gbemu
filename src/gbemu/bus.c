@@ -7,6 +7,8 @@ struct Bus {
 };
 
 u8 bus_read(const Bus *bus, u16 address) {
+    assert(bus);
+
     if (address < 0x8000) {
         return cart_read(bus->cart, address);
     }
@@ -16,6 +18,8 @@ u8 bus_read(const Bus *bus, u16 address) {
 }
 
 void bus_write(Bus *bus, u16 address, u8 value) {
+    assert(bus);
+
     if (address < 0x8000) {
         panic("TODO: cart_write");
         return;

@@ -30,10 +30,31 @@ typedef enum {
 
 typedef struct CartRom CartRom;
 
+/// @brief Get a view of the cart's header data.
+/// @param cart Must not be NULL.
+/// @return A pointer to CartHeaderView, which has the same lifetime as the
+/// given cart data.
 const CartHeaderView *cart_header(const CartRom *cart);
+
+/// @brief Validate cart header checksum.
+/// @param cart Must not be null.
+/// @return
 bool cart_is_valid_header(const CartRom *cart);
 
+/// @brief Load and validate a cart from file and store on the heap. Calls
+/// malloc() internally.
+/// @param filename The name of the file. Must not be NULL.
+/// @param err Pointer to the error code storage. May be NULL.
+/// @return Pointer to a CartRom. NULL if cart could not be loaded. Resutling
+/// pointer must be called with cart_dealloc to free its memory.
 const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err);
+
+/// @brief De-allocate CartRom memory. Calls free() internally.
+/// @param cart May be null
 void cart_dealloc(const CartRom *cart);
 
+/// @brief Read data at the given address of the cart ROM.
+/// @param cart Must not be NULL
+/// @param address
+/// @return Cart ROM data if address is in bounds, 0 otherwise.
 u8 cart_read(const CartRom *cart, u16 address);

@@ -29,8 +29,25 @@ pacman -S \
 ```
 
 ### Build
+
+Build debug
 ```
 make
+```
+
+Build release
+```
+make BUILD=release
+```
+
+Run tests
+```
+make check
+```
+
+Run Dr. Memory analysis. (Requires `drmemory` to be in `PATH`)
+```
+make drmem
 ```
 
 ## C Style Settings

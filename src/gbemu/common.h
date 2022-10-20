@@ -43,8 +43,20 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-// "Defer"
-// This is a project for fun, so please let me have this...
-// I promise I won't put this in production software.
-#define defer(expr) \
-    for (int _defer_##__LINE__ = 0; _defer_##__LINE__ ^= 1; expr)
+/// "Defer"
+///
+/// Defer the expression until the end of the given block.
+/// Be sure not to `return` or `break` out of the block.
+/// Use `continue` to jump to the defer statement.
+///
+/// Example:
+///
+/// char *s = malloc(sizeof(char) * 10)
+/// defer(free(s), s = NULL) {
+///     ...
+/// }
+///
+/// This is a project for fun, so please let me have this...
+/// I promise I won't put this in production software.
+#define defer(...) \
+    for (int _defer_##__LINE__ = 0; _defer_##__LINE__ ^= 1; __VA_ARGS__)
