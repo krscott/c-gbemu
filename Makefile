@@ -11,7 +11,7 @@ BUILD := debug
 cflags.debug := -ggdb -static-libgcc
 cflags.release := -O3
 
-CFLAGS := -Wall -Wextra ${cflags.${BUILD}}
+CFLAGS := -Wall -Wextra -std=c17 ${cflags.${BUILD}}
 LFLAGS := -Iinclude -Isrc -lmingw32 -lSDL2main -lSDL2
 
 # Get all .c files
@@ -37,6 +37,9 @@ $(BUILD_DIR)/%.c.o: %.c
 # On github windows CI, need to call full filename with '.exe'
 check: $(TEST_EXE)
 	$(shell find . -name '$(TEST_EXE)*')
+
+drmem: clean $(TEST_EXE)
+	drmemory -batch -suppress drmem-suppress.txt -- $(TEST_EXE)
 
 .PHONY: clean
 clean:

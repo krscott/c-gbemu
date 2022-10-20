@@ -20,6 +20,9 @@
 #define info(msg) \
     fprintf(stderr, "%s:%d INFO " msg "\n", __FILE__, __LINE__)
 
+#define TODO(msg) \
+    assert(false && "TODO" msg)
+
 // Type abbreviations
 
 typedef uint8_t u8;

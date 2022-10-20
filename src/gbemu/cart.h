@@ -30,13 +30,11 @@ typedef enum
     CART_TOO_SMALL,
 } CartLoadErr;
 
-typedef struct
-{
-    const u32 size;
-    const u8 *data;
-} CartRom;
+typedef struct CartRom CartRom;
 
-const CartHeaderView *cart_header(CartRom cart);
-bool cart_is_valid_header(CartRom cart);
+const CartHeaderView *cart_header(const CartRom *cart);
+bool cart_is_valid_header(const CartRom *cart);
 
-CartRom alloc_cart_from_file(const char *filename, CartLoadErr *err);
+const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err);
+
+void cart_dealloc(const CartRom *cart);

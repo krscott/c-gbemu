@@ -3,24 +3,21 @@
 #define HEADER_ADDR 0x100
 #define MIN_CART_SIZE (HEADER_ADDR + sizeof(CartHeaderView))
 
-CartRom cart_empty()
+struct CartRom
 {
-    const CartRom cart = {
-        .size = 0,
-        .data = NULL,
-    };
-    return cart;
-}
+    u32 size;
+    u8 data[];
+};
 
-const CartHeaderView *cart_header(const CartRom cart)
+const CartHeaderView *cart_header(const CartRom *cart)
 {
-    if (cart.size == 0)
+    assert(cart);
+    if (cart->size == 0)
     {
         return NULL;
     }
-    assert(cart.data);
-    assert(cart.size >= MIN_CART_SIZE);
-    return (CartHeaderView *)&cart.data[HEADER_ADDR];
+    assert(cart->size >= MIN_CART_SIZE);
+    return (CartHeaderView *)&cart->data[HEADER_ADDR];
 }
 
 static const char *ROM_TYPES[] = {
@@ -152,7 +149,7 @@ const char *cart_licensee_name(const CartHeaderView *header)
     return "UNKNOWN";
 }
 
-CartRom alloc_cart_from_file(const char *filename, CartLoadErr *err)
+const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err)
 {
     assert(filename);
 
@@ -162,7 +159,7 @@ CartRom alloc_cart_from_file(const char *filename, CartLoadErr *err)
     {
         errorf("Failed to open file: %s", filename);
         *err = CART_FILE_ERR;
-        return cart_empty();
+        return NULL;
     }
 
     fseek(file, 0, SEEK_END);
@@ -173,31 +170,28 @@ CartRom alloc_cart_from_file(const char *filename, CartLoadErr *err)
         fclose(file);
         error("File too small to be valid cart ROM");
         *err = CART_TOO_SMALL;
-        return cart_empty();
+        return NULL;
     }
 
     // Allocate and read data from file
-    u8 *cart_data = (u8 *)malloc(sizeof(u8) * cart_size);
+    CartRom *cart = malloc(sizeof(CartRom) + sizeof(u8) * cart_size);
 
-    if (!cart_data)
+    if (!cart)
     {
-        cart_size = 0;
         fclose(file);
         error("Allocation failed");
         *err = CART_FILE_ERR;
-        return cart_empty();
+        return NULL;
     }
 
+    cart->size = cart_size;
+
     rewind(file);
-    fread(cart_data, cart_size, 1, file);
+    fread(cart->data, cart_size, 1, file);
     fclose(file);
 
-    CartRom cart = {
-        .size = cart_size,
-        .data = cart_data,
-    };
-
     const CartHeaderView *header = cart_header(cart);
+    assert(header);
 
     infof("Filename : %s", filename);
     infof("Title    : %.*s", 15, header->title);
@@ -217,9 +211,15 @@ CartRom alloc_cart_from_file(const char *filename, CartLoadErr *err)
     return cart;
 }
 
-bool cart_is_valid_header(const CartRom cart)
+void cart_dealloc(const CartRom *cart)
 {
-    if (!cart.size || !cart.data)
+    free((void *)cart);
+}
+
+bool cart_is_valid_header(const CartRom *cart)
+{
+    assert(cart);
+    if (!cart->size)
     {
         return false;
     }
@@ -227,7 +227,7 @@ bool cart_is_valid_header(const CartRom cart)
     u16 chk = 0;
     for (u16 addr = 0x0134; addr <= 0x014C; ++addr)
     {
-        chk = chk - cart.data[addr] - 1;
+        chk = chk - cart->data[addr] - 1;
     }
     const CartHeaderView *header = cart_header(cart);
 
