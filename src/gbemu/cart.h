@@ -35,5 +35,6 @@ const CartHeaderView *cart_header(const CartRom *cart);
 bool cart_is_valid_header(const CartRom *cart);
 
 const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err);
-
 void cart_dealloc(const CartRom *cart);
+
+u8 cart_read(const CartRom *cart, u16 address);

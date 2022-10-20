@@ -20,8 +20,19 @@
 #define info(msg) \
     fprintf(stderr, "%s:%d INFO " msg "\n", __FILE__, __LINE__)
 
-#define TODO(msg) \
-    assert(false && "TODO" msg)
+#define panicf(fmt, ...)                                                             \
+    do                                                                               \
+    {                                                                                \
+        fprintf(stderr, "%s:%d PANIC " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
+        abort();                                                                     \
+    } while (0)
+
+#define panic(msg)                                                    \
+    do                                                                \
+    {                                                                 \
+        fprintf(stderr, "%s:%d PANIC " msg "\n", __FILE__, __LINE__); \
+        abort();                                                      \
+    } while (0)
 
 // Type abbreviations
 
@@ -34,3 +45,8 @@ typedef int8_t i8;
 typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
+
+// "Defer"
+// This is a project for fun, so please let me have this...
+// I promise I won't put this in production software.
+#define defer(expr) for (int _defer_##__LINE__ = 0; _defer_##__LINE__ ^= 1; expr)

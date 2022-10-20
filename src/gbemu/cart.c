@@ -322,3 +322,8 @@ bool cart_is_valid_header(const CartRom *cart)
 
     return (u8)(chk & 0xff) == header->checksum;
 }
+
+u8 cart_read(const CartRom *cart, u16 address)
+{
+    return cart->data[address];
+}
