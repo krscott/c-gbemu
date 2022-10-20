@@ -1,8 +1,15 @@
 #pragma once
 
+#include "cart.h"
 #include "common.h"
+#include "rom.h"
 
-typedef struct Bus Bus;
+typedef struct {
+    const Rom *boot;
+    const CartRom *cart;
+
+    bool is_bootrom_disabled;
+} Bus;
 
 /// @brief Read data from the bus
 /// @param bus Must not be NULL

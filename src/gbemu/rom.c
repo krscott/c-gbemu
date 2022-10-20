@@ -1,5 +1,25 @@
 #include "rom.h"
 
+#include <string.h>  // memset
+
+Rom *rom_alloc_uninit(size_t size) {
+    Rom *rom = malloc(sizeof(Rom) + sizeof(u8) * size);
+    rom->size = size;
+    return rom;
+}
+
+const Rom *rom_alloc_blank(size_t size) {
+    Rom *rom = rom_alloc_uninit(size);
+    memset(rom->data, 0, size);
+    return rom;
+}
+
+const Rom *rom_from_buf(const u8 *data, size_t n) {
+    Rom *rom = rom_alloc_uninit(n);
+    memcpy(rom->data, data, n / sizeof(data[0]));
+    return rom;
+}
+
 const Rom *rom_alloc_from_file(const char *filename, RomLoadErr *err) {
     assert(filename);
 
@@ -14,34 +34,31 @@ const Rom *rom_alloc_from_file(const char *filename, RomLoadErr *err) {
     fseek(file, 0, SEEK_END);
     size_t rom_size = ftell(file);
 
-    // Allocate and read data from file
-    Rom *cart = malloc(sizeof(Rom) + sizeof(u8) * rom_size);
+    Rom *rom = rom_alloc_uninit(rom_size);
 
-    if (!cart) {
+    if (!rom) {
         fclose(file);
         error("Allocation failed");
         if (err) *err = ROM_FILE_ERR;
         return NULL;
     }
 
-    cart->size = rom_size;
-
     rewind(file);
-    fread(cart->data, rom_size, 1, file);
+    fread(rom->data, rom_size, 1, file);
     fclose(file);
 
     if (err) *err = ROM_OK;
-    return cart;
+    return rom;
 }
 
-void rom_dealloc(const Rom *cart) { free((void *)cart); }
+void rom_dealloc(const Rom *rom) { free((void *)rom); }
 
-u8 rom_read(const Rom *cart, u16 address) {
-    assert(cart);
+u8 rom_read(const Rom *rom, u16 address) {
+    assert(rom);
 
-    if (address >= cart->size) {
+    if (address >= rom->size) {
         return 0;
     }
 
-    return cart->data[address];
+    return rom->data[address];
 }

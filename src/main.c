@@ -56,8 +56,9 @@ int main(int argc, char *args[]) {
     }
 
     if (filename) {
-        CartLoadErr err;
+        RomLoadErr err;
         const CartRom *cart = cart_alloc_from_file(filename, &err);
+        print_cart_info(cart, filename);
 
         panic("TODO: Error handling");
     }

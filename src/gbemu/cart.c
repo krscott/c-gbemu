@@ -215,25 +215,28 @@ const char *cart_licensee_name(const CartHeaderView *header) {
     return LICENSEE_CODE[code];
 }
 
+void print_cart_info(const CartRom *cart, const char *filename) {
+    const CartHeaderView *header = cart_header(cart);
+    assert(header);
+
+    if (filename) printf("Filename : %s\n", filename);
+
+    printf("Title    : %.*s\n", 15, header->title);
+    printf("Type     : %s\n", cart_type_name(header));
+    printf("ROM Size : %d KB\n", 32 << header->rom_size);
+    printf("RAM Size : %2.2X\n", 32 << header->ram_size);
+    printf("LIC Code : %2.2X - %s\n", cart_licensee_code(header),
+           cart_licensee_name(header));
+    printf("ROM Vers : %2.2X\n", header->mask_rom_version);
+    printf("Checksum : %2.2X - %s\n", header->checksum,
+           cart_is_valid_header(cart) ? "PASSED" : "FAILED");
+}
+
 const CartRom *cart_alloc_from_file(const char *filename, RomLoadErr *err) {
     // CartRom and Rom are byte-compatible
     static_assert(sizeof(CartRom) == sizeof(Rom));
     const CartRom *cart = (const CartRom *)rom_alloc_from_file(filename, err);
     if (!cart) return NULL;
-
-    const CartHeaderView *header = cart_header(cart);
-    assert(header);
-
-    infof("Filename : %s", filename);
-    infof("Title    : %.*s", 15, header->title);
-    infof("Type     : %s", cart_type_name(header));
-    infof("ROM Size : %d KB", 32 << header->rom_size);
-    infof("RAM Size : %2.2X", 32 << header->ram_size);
-    infof("LIC Code : %2.2X - %s", cart_licensee_code(header),
-          cart_licensee_name(header));
-    infof("ROM Vers : %2.2X", header->mask_rom_version);
-    infof("Checksum : %2.2X - %s", header->checksum,
-          cart_is_valid_header(cart) ? "PASSED" : "FAILED");
 
     return cart;
 }

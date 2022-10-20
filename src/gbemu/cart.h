@@ -55,3 +55,8 @@ void cart_dealloc(const CartRom *cart);
 /// @param address
 /// @return Cart ROM data if address is in bounds, 0 otherwise.
 u8 cart_read(const CartRom *cart, u16 address);
+
+/// @brief Print cart info.
+/// @param cart The cart ROM data. Must not be null.
+/// @param filename Optional. If NULL, filename will not be printed
+void print_cart_info(const CartRom *cart, const char *filename);
