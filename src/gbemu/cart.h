@@ -18,8 +18,9 @@ typedef struct
     const u8 old_licensee_code;
     const u8 mask_rom_version;
     const u8 checksum;
-    const u16 global_checksum;
+    const u8 global_checksum[2];
 } CartHeaderView;
+static_assert(sizeof(CartHeaderView) == 0x50);
 
 typedef enum
 {
