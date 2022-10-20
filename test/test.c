@@ -1,19 +1,18 @@
 
-#include "gbemu/cart.h"
+#include "../src/gbemu/cart.h"
 
-// Make sure NDEBUG was not set during build step to ensure all asserts are enabled.
+// Make sure NDEBUG was not set during build step to ensure all asserts are
+// enabled.
 #ifdef NDEBUG
 #error "NDEBUG must not be set for testing"
 #endif
 
-void test_cart()
-{
+void test_cart() {
     const char *filename = "roms/01-special.gb";
 
     CartLoadErr err;
     const CartRom *cart = cart_alloc_from_file(filename, &err);
-    defer(cart_dealloc(cart))
-    {
+    defer(cart_dealloc(cart)) {
         assert(err == CART_OK);
         assert(cart_is_valid_header(cart));
 
@@ -23,8 +22,7 @@ void test_cart()
     }
 }
 
-int main(void)
-{
+int main(void) {
     test_cart();
 
     info("All tests passed!");

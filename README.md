@@ -32,3 +32,11 @@ pacman -S \
 ```
 make
 ```
+
+## C Style Settings
+
+These clang-format settings are used for VSCode:
+```
+"C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4 }"
+```
+[More info](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)

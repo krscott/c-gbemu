@@ -2,15 +2,12 @@
 
 #include "cart.h"
 
-struct Bus
-{
+struct Bus {
     const CartRom *cart;
 };
 
-u8 bus_read(const Bus *bus, u16 address)
-{
-    if (address < 0x8000)
-    {
+u8 bus_read(const Bus *bus, u16 address) {
+    if (address < 0x8000) {
         return cart_read(bus->cart, address);
     }
 
@@ -18,10 +15,8 @@ u8 bus_read(const Bus *bus, u16 address)
     return 0;
 }
 
-void bus_write(Bus *bus, u16 address, u8 value)
-{
-    if (address < 0x8000)
-    {
+void bus_write(Bus *bus, u16 address, u8 value) {
+    if (address < 0x8000) {
         panic("TODO: cart_write");
         return;
     }

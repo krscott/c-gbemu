@@ -4,8 +4,7 @@
 
 // https://gbdev.io/pandocs/The_Cartridge_Header.html
 
-typedef struct
-{
+typedef struct {
     const u8 entry[4];
     const u8 logo[0x30];
     const char title[16];
@@ -22,8 +21,7 @@ typedef struct
 } CartHeaderView;
 static_assert(sizeof(CartHeaderView) == 0x50);
 
-typedef enum
-{
+typedef enum {
     CART_OK,
     CART_FILE_ERR,
     CART_ALLOC_ERR,

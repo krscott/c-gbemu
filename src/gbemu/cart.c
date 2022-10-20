@@ -3,17 +3,14 @@
 #define HEADER_ADDR 0x100
 #define MIN_CART_SIZE (HEADER_ADDR + sizeof(CartHeaderView))
 
-struct CartRom
-{
+struct CartRom {
     u32 size;
     u8 data[];
 };
 
-const CartHeaderView *cart_header(const CartRom *cart)
-{
+const CartHeaderView *cart_header(const CartRom *cart) {
     assert(cart);
-    if (cart->size == 0)
-    {
+    if (cart->size == 0) {
         return NULL;
     }
     assert(cart->size >= MIN_CART_SIZE);
@@ -58,10 +55,8 @@ static const char *ROM_TYPES[] = {
     "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
 };
 
-const char *cart_type_name(const CartHeaderView *header)
-{
-    if (header->cart_type <= 0x22)
-    {
+const char *cart_type_name(const CartHeaderView *header) {
+    if (header->cart_type <= 0x22) {
         return ROM_TYPES[header->cart_type];
     }
     return "UNKNOWN";
@@ -218,14 +213,10 @@ static const char *LICENSEE_CODE[0x100] = {
     [0xFF] = "LJN",
 };
 
-u8 cart_licensee_code(const CartHeaderView *header)
-{
-    if (header->old_licensee_code == 0x33)
-    {
-        const char lic_ascii[] = {
-            header->new_licensee_code[0],
-            header->new_licensee_code[1],
-            '\0'};
+u8 cart_licensee_code(const CartHeaderView *header) {
+    if (header->old_licensee_code == 0x33) {
+        const char lic_ascii[] = {header->new_licensee_code[0],
+                                  header->new_licensee_code[1], '\0'};
 
         return atoi(lic_ascii);
     }
@@ -233,44 +224,39 @@ u8 cart_licensee_code(const CartHeaderView *header)
     return header->old_licensee_code;
 }
 
-const char *cart_licensee_name(const CartHeaderView *header)
-{
+const char *cart_licensee_name(const CartHeaderView *header) {
     u8 code = cart_licensee_code(header);
     return LICENSEE_CODE[code];
 }
 
-const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err)
-{
+const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err) {
     assert(filename);
 
     FILE *file = fopen(filename, "r");
 
-    if (!file)
-    {
+    if (!file) {
         errorf("Failed to open file: %s", filename);
-        *err = CART_FILE_ERR;
+        if (err) *err = CART_FILE_ERR;
         return NULL;
     }
 
     fseek(file, 0, SEEK_END);
     u32 cart_size = ftell(file);
 
-    if (cart_size < MIN_CART_SIZE)
-    {
+    if (cart_size < MIN_CART_SIZE) {
         fclose(file);
         error("File too small to be valid cart ROM");
-        *err = CART_TOO_SMALL;
+        if (err) *err = CART_TOO_SMALL;
         return NULL;
     }
 
     // Allocate and read data from file
     CartRom *cart = malloc(sizeof(CartRom) + sizeof(u8) * cart_size);
 
-    if (!cart)
-    {
+    if (!cart) {
         fclose(file);
         error("Allocation failed");
-        *err = CART_FILE_ERR;
+        if (err) *err = CART_FILE_ERR;
         return NULL;
     }
 
@@ -288,34 +274,26 @@ const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err)
     infof("Type     : %s", cart_type_name(header));
     infof("ROM Size : %d KB", 32 << header->rom_size);
     infof("RAM Size : %2.2X", 32 << header->ram_size);
-    infof("LIC Code : %2.2X - %s",
-          cart_licensee_code(header),
+    infof("LIC Code : %2.2X - %s", cart_licensee_code(header),
           cart_licensee_name(header));
     infof("ROM Vers : %2.2X", header->mask_rom_version);
-    infof("Checksum : %2.2X - %s",
-          header->checksum,
+    infof("Checksum : %2.2X - %s", header->checksum,
           cart_is_valid_header(cart) ? "PASSED" : "FAILED");
 
-    *err = CART_OK;
+    if (err) *err = CART_OK;
     return cart;
 }
 
-void cart_dealloc(const CartRom *cart)
-{
-    free((void *)cart);
-}
+void cart_dealloc(const CartRom *cart) { free((void *)cart); }
 
-bool cart_is_valid_header(const CartRom *cart)
-{
+bool cart_is_valid_header(const CartRom *cart) {
     assert(cart);
-    if (!cart->size)
-    {
+    if (!cart->size) {
         return false;
     }
 
     u16 chk = 0;
-    for (u16 addr = 0x0134; addr <= 0x014C; ++addr)
-    {
+    for (u16 addr = 0x0134; addr <= 0x014C; ++addr) {
         chk = chk - cart->data[addr] - 1;
     }
     const CartHeaderView *header = cart_header(cart);
@@ -323,7 +301,7 @@ bool cart_is_valid_header(const CartRom *cart)
     return (u8)(chk & 0xff) == header->checksum;
 }
 
-u8 cart_read(const CartRom *cart, u16 address)
-{
+u8 cart_read(const CartRom *cart, u16 address) {
+    assert(cart);
     return cart->data[address];
 }

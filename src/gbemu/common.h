@@ -1,35 +1,32 @@
 #pragma once
 
+#include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
 // Logging macros
 
 #define errorf(fmt, ...) \
     fprintf(stderr, "%s:%d ERROR " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
-#define error(msg) \
-    fprintf(stderr, "%s:%d ERROR " msg "\n", __FILE__, __LINE__)
+#define error(msg) fprintf(stderr, "%s:%d ERROR " msg "\n", __FILE__, __LINE__)
 
 #define infof(fmt, ...) \
     fprintf(stderr, "%s:%d INFO " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
-#define info(msg) \
-    fprintf(stderr, "%s:%d INFO " msg "\n", __FILE__, __LINE__)
+#define info(msg) fprintf(stderr, "%s:%d INFO " msg "\n", __FILE__, __LINE__)
 
-#define panicf(fmt, ...)                                                             \
-    do                                                                               \
-    {                                                                                \
-        fprintf(stderr, "%s:%d PANIC " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__); \
-        abort();                                                                     \
+#define panicf(fmt, ...)                                             \
+    do {                                                             \
+        fprintf(stderr, "%s:%d PANIC " fmt "\n", __FILE__, __LINE__, \
+                ##__VA_ARGS__);                                      \
+        abort();                                                     \
     } while (0)
 
 #define panic(msg)                                                    \
-    do                                                                \
-    {                                                                 \
+    do {                                                              \
         fprintf(stderr, "%s:%d PANIC " msg "\n", __FILE__, __LINE__); \
         abort();                                                      \
     } while (0)
@@ -49,4 +46,5 @@ typedef int64_t i64;
 // "Defer"
 // This is a project for fun, so please let me have this...
 // I promise I won't put this in production software.
-#define defer(expr) for (int _defer_##__LINE__ = 0; _defer_##__LINE__ ^= 1; expr)
+#define defer(expr) \
+    for (int _defer_##__LINE__ = 0; _defer_##__LINE__ ^= 1; expr)
