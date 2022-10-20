@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "rom.h"
 
 // https://gbdev.io/pandocs/The_Cartridge_Header.html
 
@@ -21,14 +22,10 @@ typedef struct {
 } CartHeaderView;
 static_assert(sizeof(CartHeaderView) == 0x50);
 
-typedef enum {
-    CART_OK,
-    CART_FILE_ERR,
-    CART_ALLOC_ERR,
-    CART_TOO_SMALL,
-} CartLoadErr;
-
-typedef struct CartRom CartRom;
+/// @brief Byte-compatible wrapper of Rom struct.
+typedef struct {
+    Rom rom;
+} CartRom;
 
 /// @brief Get a view of the cart's header data.
 /// @param cart Must not be NULL.
@@ -47,7 +44,7 @@ bool cart_is_valid_header(const CartRom *cart);
 /// @param err Pointer to the error code storage. May be NULL.
 /// @return Pointer to a CartRom. NULL if cart could not be loaded. Resutling
 /// pointer must be called with cart_dealloc to free its memory.
-const CartRom *cart_alloc_from_file(const char *filename, CartLoadErr *err);
+const CartRom *cart_alloc_from_file(const char *filename, RomLoadErr *err);
 
 /// @brief De-allocate CartRom memory. Calls free() internally.
 /// @param cart May be null
