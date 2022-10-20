@@ -241,7 +241,10 @@ const CartRom *cart_alloc_from_file(const char *filename, RomLoadErr *err) {
     return cart;
 }
 
-void cart_dealloc(const CartRom *cart) { free((void *)cart); }
+void cart_dealloc(const CartRom **cart) {
+    free((CartRom *)*cart);
+    *cart = NULL;
+}
 
 const CartHeaderView *cart_header(const CartRom *cart) {
     assert(cart);

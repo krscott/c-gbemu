@@ -26,7 +26,7 @@ const Rom *rom_alloc_from_file(const char *filename, RomLoadErr *err);
 
 /// @brief De-allocate Rom memory. Calls free() internally.
 /// @param rom May be null
-void rom_dealloc(const Rom *rom);
+void rom_dealloc(const Rom **rom);
 
 /// @brief Read data at the given address of the ROM.
 /// @param rom Must not be NULL

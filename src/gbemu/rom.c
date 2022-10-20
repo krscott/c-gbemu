@@ -51,7 +51,10 @@ const Rom *rom_alloc_from_file(const char *filename, RomLoadErr *err) {
     return rom;
 }
 
-void rom_dealloc(const Rom *rom) { free((void *)rom); }
+void rom_dealloc(const Rom **rom) {
+    free((Rom *)*rom);
+    *rom = NULL;
+}
 
 u8 rom_read(const Rom *rom, u16 address) {
     assert(rom);

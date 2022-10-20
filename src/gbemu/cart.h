@@ -48,7 +48,7 @@ const CartRom *cart_alloc_from_file(const char *filename, RomLoadErr *err);
 
 /// @brief De-allocate CartRom memory. Calls free() internally.
 /// @param cart May be null
-void cart_dealloc(const CartRom *cart);
+void cart_dealloc(const CartRom **cart);
 
 /// @brief Read data at the given address of the cart ROM.
 /// @param cart Must not be NULL
