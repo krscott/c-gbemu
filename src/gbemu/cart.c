@@ -152,7 +152,7 @@ const char *cart_licensee_name(const CartHeaderView *header)
     return "UNKNOWN";
 }
 
-CartRom alloc_cart_from_file(const Allocator allocator, const char *filename, CartLoadErr *err)
+CartRom alloc_cart_from_file(const char *filename, CartLoadErr *err)
 {
     assert(filename);
 
@@ -177,7 +177,7 @@ CartRom alloc_cart_from_file(const Allocator allocator, const char *filename, Ca
     }
 
     // Allocate and read data from file
-    u8 *cart_data = (u8 *)allocator.alloc(sizeof(u8) * cart_size);
+    u8 *cart_data = (u8 *)malloc(sizeof(u8) * cart_size);
 
     if (!cart_data)
     {

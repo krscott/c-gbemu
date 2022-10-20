@@ -57,11 +57,11 @@ jobs:
             mingw-w64-x86_64-SDL2_ttf
             mingw-w64-x86_64-SDL2_net
 
-      - name: make
-        run: make
-
       - name: make check
         run: make check
+
+      - name: make
+        run: make BUILD=release
 
       - name: Download SDL2
         uses: albin-johansson/download-sdl2@v2

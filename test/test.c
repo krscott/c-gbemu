@@ -6,7 +6,7 @@
 #error "NDEBUG must not be set for testing"
 #endif
 
-void test_cart(const Allocator allocator)
+void test_cart()
 {
     // Empty cartridge
     {
@@ -19,17 +19,15 @@ void test_cart(const Allocator allocator)
         const char *filename = "roms/01-special.gb";
 
         CartLoadErr err;
-        CartRom cart = alloc_cart_from_file(allocator, filename, &err);
-
+        CartRom cart = alloc_cart_from_file(filename, &err);
+        assert(err == CART_OK);
         assert(cart_is_valid_header(cart));
     }
 }
 
 int main(void)
 {
-    const Allocator allocator = std_allocator();
-
-    test_cart(allocator);
+    test_cart();
 
     info("All tests passed!");
 }

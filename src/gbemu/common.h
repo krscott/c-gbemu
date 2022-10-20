@@ -31,20 +31,3 @@ typedef int8_t i8;
 typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
-
-// Allocator
-
-typedef struct
-{
-    void *(*alloc)(size_t);
-    void (*free)(void *);
-} Allocator;
-
-inline Allocator std_allocator()
-{
-    Allocator allocator = {
-        .alloc = malloc,
-        .free = free,
-    };
-    return allocator;
-}

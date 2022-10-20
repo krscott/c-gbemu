@@ -39,4 +39,4 @@ typedef struct
 const CartHeaderView *cart_header(CartRom cart);
 bool cart_is_valid_header(CartRom cart);
 
-CartRom alloc_cart_from_file(Allocator allocator, const char *filename, CartLoadErr *err);
+CartRom alloc_cart_from_file(const char *filename, CartLoadErr *err);

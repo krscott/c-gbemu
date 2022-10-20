@@ -60,12 +60,10 @@ int main(int argc, char *args[])
         filename = args[1];
     }
 
-    const Allocator allocator = std_allocator();
-
     if (filename)
     {
         CartLoadErr err;
-        CartRom cart = alloc_cart_from_file(allocator, filename, &err);
+        CartRom cart = alloc_cart_from_file(filename, &err);
     }
 
     // window();

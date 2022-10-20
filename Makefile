@@ -6,7 +6,12 @@ SRC_DIR := src/gbemu
 SRC_MAIN := src/main.c
 SRC_TEST := test/test.c
 
-CFLAGS := -O2
+BUILD := debug
+
+cflags.debug := -ggdb -static-libgcc
+cflags.release := -O3
+
+CFLAGS := -Wall -Wextra ${cflags.${BUILD}}
 LFLAGS := -Iinclude -Isrc -lmingw32 -lSDL2main -lSDL2
 
 # Get all .c files
@@ -30,12 +35,11 @@ $(BUILD_DIR)/%.c.o: %.c
 	$(CC) $(CFLAGS) $(LFLAGS) -c $< -o $@
 
 # On github windows CI, need to call full filename with '.exe'
-TEST_EXE_BIN := $(shell find . -name '$(TEST_EXE)*')
 check: $(TEST_EXE)
-	$(TEST_EXE_BIN)
+	$(shell find . -name '$(TEST_EXE)*')
 
 .PHONY: clean
 clean:
-	rm -r $(BUILD_DIR)
-	rm $(EXE)
-	rm $(TEST_EXE)
+	@[ -d $(BUILD_DIR) ] && rm -r $(BUILD_DIR) || true
+	@[ -f $(EXE) ] && rm $(EXE) || true
+	@[ -f $(TEST_EXE) ] && rm $(TEST_EXE) || true
