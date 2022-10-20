@@ -18,6 +18,9 @@ const Instruction instructions[0x100] = {
     // XOR A,B
     [0xA8] = {{.alu0 = A, .alu1 = B, .uop = XOR, .st = A, .end = true}},
 
+    // XOR A,A
+    [0xAF] = {{.alu0 = A, .alu1 = A, .uop = XOR, .st = A, .end = true}},
+
     // JP u16
     [0xC3] = {{0},
               {.io = FETCH_PC, .ld = TMP_LO},

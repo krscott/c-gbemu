@@ -2,6 +2,11 @@
 
 #include "instructions.h"
 
+#define FZ 0x80
+#define FN 0x40
+#define FH 0x20
+#define FC 0x10
+
 u16 cpu_tmp16(Cpu *cpu) {
     return (((u16)cpu->tmp_hi) << 8) | ((u16)cpu->tmp_lo);
 }
@@ -79,6 +84,11 @@ u8 _cpu_get(Cpu *cpu, Target target) {
     }
 }
 
+/// @brief Get zero flag
+/// @param value
+/// @return 0x80 if value == 0, otherwise 0
+u8 chk_z(u8 value) { return value == 0 ? FZ : 0; }
+
 void cpu_cycle(Cpu *cpu, Bus *bus) {
     assert(cpu);
     if (cpu->halted) return;
@@ -127,8 +137,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->pc = cpu_tmp16(cpu);
             break;
         case XOR:
-            // TODO: Flags
             st_val = alu0_val ^ alu1_val;
+            cpu->f = chk_z(st_val);
             break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);

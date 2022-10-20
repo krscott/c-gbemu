@@ -64,11 +64,14 @@ void test_cpu_halt(void) {
     assert(cpu.halted);
 }
 
-void test_cpu_ld(void) {
+void test_cpu_ld_xor(void) {
     const u8 prog[] = {
         0x3E, 0x55,  // LD A,$55
         0x06, 0xF0,  // LD B,$F0
-        0xA8,        // XOR B     ; expect A == 0xA5
+        0xA8,        // XOR B     ; expect A == 0xA5, F == 0x00
+        0x76,        // HALT
+        0xA8,        // XOR B     ; expect A == 0x55, F == 0x00
+        0xAF,        // XOR A     ; expect A == 0x00, F == 0x80
         0x76,        // HALT
     };
     const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
@@ -80,13 +83,21 @@ void test_cpu_ld(void) {
     }
 
     assert(cpu.a == 0xA5);
+    assert(cpu.f == 0x00);
+
+    cpu.halted = false;
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    assert(cpu.a == 0x00);
+    assert(cpu.f == 0x80);
 }
 
 int main(void) {
     test_cart();
     test_cpu_jp();
     test_cpu_halt();
-    test_cpu_ld();
+    test_cpu_ld_xor();
 
     printf("\nAll tests passed!\n");
 }
