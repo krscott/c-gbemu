@@ -25,14 +25,22 @@ typedef enum {
 typedef enum {
     UOP_NONE = 0,
     STORE_PC,
+    XOR,
 } MicroOperation;
 
 typedef struct {
     BusIo io;
-    Target dst;
+    Target ld;
+    Target alu0;
+    Target alu1;
+    Target st;
     MicroOperation uop;
+    bool halt;
+    bool end;
 } MicroInstr;
 
 typedef MicroInstr Instruction[MICRO_INSTRUCTION_SIZE];
 
 const MicroInstr *instructions_get_uinst(u8 opcode, u8 ustep);
+
+bool instructions_is_last_ustep(u8 opcode, u8 ustep);

@@ -27,13 +27,11 @@ void test_cart(void) {
 }
 
 void test_cpu_jp(void) {
-    const u8 jp_prog[] = {0xC3, 0xAA, 0xBB};
-    const Rom *rom defer(rom_dealloc) = rom_from_buf(jp_prog, sizeof(jp_prog));
-
-    Bus bus = {
-        .boot = rom,
+    const u8 prog[] = {
+        0xC3, 0xAA, 0xBB,  // JP $BBAA
     };
-
+    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    Bus bus = {.boot = rom};
     Cpu cpu = {0};
 
     // Read opcode
@@ -53,9 +51,42 @@ void test_cpu_jp(void) {
     assert(cpu.pc == 0xBBAA);
 }
 
+void test_cpu_halt(void) {
+    const u8 prog[] = {
+        0x76,  // HALT
+    };
+    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    Bus bus = {.boot = rom};
+    Cpu cpu = {0};
+
+    assert(!cpu.halted);
+    cpu_cycle(&cpu, &bus);
+    assert(cpu.halted);
+}
+
+void test_cpu_ld(void) {
+    const u8 prog[] = {
+        0x3E, 0x55,  // LD A,$55
+        0x06, 0xF0,  // LD B,$F0
+        0xA8,        // XOR B     ; expect A == 0xA5
+        0x76,        // HALT
+    };
+    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    Bus bus = {.boot = rom};
+    Cpu cpu = {0};
+
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+
+    assert(cpu.a == 0xA5);
+}
+
 int main(void) {
     test_cart();
     test_cpu_jp();
+    test_cpu_halt();
+    test_cpu_ld();
 
-    info("All tests passed!");
+    printf("\nAll tests passed!\n");
 }
