@@ -9,8 +9,7 @@ typedef struct
     const u8 entry[4];
     const u8 logo[0x30];
     const char title[16];
-
-    const u16 new_licensee_code;
+    const char new_licensee_code[2];
     const u8 sgb;
     const u8 cart_type;
     const u8 rom_size;
