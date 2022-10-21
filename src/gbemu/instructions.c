@@ -17,9 +17,12 @@ const Instruction instructions[0x100] = {
     [0x05] = {{.uop = DEC, .lhs = B, .end = true}},
 
     // LD B,u8
-    [0x06] =
-        {{0},
-         {.io = READ_PC, .uop = LD_R8_R8, .lhs = B, .rhs = BUS, .end = true}},
+    [0x06] = {{0},
+              {.io = READ_PC_INC,
+               .uop = LD_R8_R8,
+               .lhs = B,
+               .rhs = BUS,
+               .end = true}},
 
     [0x07] = {{.undefined = true}},
     [0x08] = {{.undefined = true}},
@@ -54,9 +57,12 @@ const Instruction instructions[0x100] = {
     [0x25] = {{.undefined = true}},
 
     // LD H,u8
-    [0x26] =
-        {{0},
-         {.io = READ_PC, .uop = LD_R8_R8, .lhs = H, .rhs = BUS, .end = true}},
+    [0x26] = {{0},
+              {.io = READ_PC_INC,
+               .uop = LD_R8_R8,
+               .lhs = H,
+               .rhs = BUS,
+               .end = true}},
 
     [0x27] = {{.undefined = true}},
     [0x28] = {{.undefined = true}},
@@ -67,9 +73,12 @@ const Instruction instructions[0x100] = {
     [0x2D] = {{.undefined = true}},
 
     // LD L,u8
-    [0x2E] =
-        {{0},
-         {.io = READ_PC, .uop = LD_R8_R8, .lhs = L, .rhs = BUS, .end = true}},
+    [0x2E] = {{0},
+              {.io = READ_PC_INC,
+               .uop = LD_R8_R8,
+               .lhs = L,
+               .rhs = BUS,
+               .end = true}},
 
     [0x2F] = {{.undefined = true}},
     [0x30] = {{.undefined = true}},
@@ -88,9 +97,12 @@ const Instruction instructions[0x100] = {
     [0x3D] = {{.undefined = true}},
 
     // LD A,u8
-    [0x3E] =
-        {{0},
-         {.io = READ_PC, .uop = LD_R8_R8, .lhs = A, .rhs = BUS, .end = true}},
+    [0x3E] = {{0},
+              {.io = READ_PC_INC,
+               .uop = LD_R8_R8,
+               .lhs = A,
+               .rhs = BUS,
+               .end = true}},
 
     [0x3F] = {{.undefined = true}},
     [0x40] = {{.undefined = true}},
@@ -251,8 +263,8 @@ const Instruction instructions[0x100] = {
 
     // JP u16
     [0xC3] = {{0},
-              {.io = READ_PC, .uop = LD_R8_R8, .lhs = TMP_LO, .rhs = BUS},
-              {.io = READ_PC, .uop = LD_R8_R8, .lhs = TMP_HI, .rhs = BUS},
+              {.io = READ_PC_INC, .uop = LD_R8_R8, .lhs = JP_LO, .rhs = BUS},
+              {.io = READ_PC_INC, .uop = LD_R8_R8, .lhs = JP_HI, .rhs = BUS},
               {.uop = LD16_PC_TMP, .end = true}},
 
     [0xC4] = {{.undefined = true}},

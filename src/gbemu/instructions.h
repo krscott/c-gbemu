@@ -6,8 +6,20 @@
 
 typedef enum {
     IO_NONE = 0,
-    READ_PC,
+    READ_PC_INC,
+    READ_BC,
+    READ_DE,
+    READ_HL,
+    READ_HL_INC,
+    READ_HL_DEC,
+    READ_SP_INC,
+    WRITE_BC,
+    WRITE_DE,
     WRITE_HL,
+    WRITE_HL_INC,
+    WRITE_HL_DEC,
+    WRITE_SP_DEC,
+    WRITE_JP_INC,
 } BusIo;
 
 typedef enum {
@@ -20,29 +32,56 @@ typedef enum {
     H,
     L,
     BUS,
-    TMP_LO,
-    TMP_HI,
+    SP_LO,
+    SP_HI,
+    PC_LO,
+    PC_HI,
+    JP_LO,
+    JP_HI,
 } Target;
 
 typedef enum {
     UOP_NONE = 0,
     LD16_PC_TMP,
     LD_R8_R8,
+    INC16_LO,
+    INC16_HI,
+    DEC16_LO,
+    DEC16_HI,
+    ADD16_LO,
+    ADD16_HI,
     INC,
     DEC,
     ADD,
     ADC,
     SUB,
     SBC,
+    AND,
     XOR,
+    OR,
+    CP,
     HALT,
+    JP_REL,
+    JP,
+    JP_HL,
+    RST,
+    PREFIX_OP,
 } MicroOperation;
+
+typedef enum {
+    COND_ALWAYS = 0,
+    COND_NZ,
+    COND_Z,
+    COND_NC,
+    COND_C,
+} Condition;
 
 typedef struct {
     BusIo io;
     Target lhs;
     Target rhs;
     MicroOperation uop;
+    Condition cond;
     bool end;
     bool undefined;
 } MicroInstr;

@@ -53,10 +53,10 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
         case BUS:
             cpu->bus_reg = value;
             break;
-        case TMP_LO:
+        case JP_LO:
             cpu->tmp_lo = value;
             break;
-        case TMP_HI:
+        case JP_HI:
             cpu->tmp_hi = value;
             break;
         default:
@@ -84,9 +84,9 @@ u8 _cpu_get(Cpu *cpu, Target target) {
             return cpu->l;
         case BUS:
             return cpu->bus_reg;
-        case TMP_LO:
+        case JP_LO:
             return cpu->tmp_lo;
-        case TMP_HI:
+        case JP_HI:
             return cpu->tmp_hi;
         default:
             panicf("Unhandled load-target case: %d", target);
@@ -171,7 +171,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case IO_NONE:
         case WRITE_HL:
             break;
-        case READ_PC:
+        case READ_PC_INC:
             cpu->bus_reg = bus_read(bus, cpu->pc++);
             break;
         default:
@@ -228,7 +228,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 
     switch (uinst->io) {
         case IO_NONE:
-        case READ_PC:
+        case READ_PC_INC:
             break;
         case WRITE_HL:
             bus_write(bus, cpu_hl(cpu), cpu->bus_reg);
