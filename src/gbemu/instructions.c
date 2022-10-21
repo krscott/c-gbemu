@@ -11,13 +11,15 @@ const Instruction instructions[0x100] = {
     [0x03] = {{.undefined = true}},
 
     // INC B
-    [0x04] = {{.lhs = B, .uop = INC, .ld = B, .end = true}},
+    [0x04] = {{.uop = INC, .lhs = B, .end = true}},
 
     // DEC B
-    [0x05] = {{.lhs = B, .uop = DEC, .ld = B, .end = true}},
+    [0x05] = {{.uop = DEC, .lhs = B, .end = true}},
 
     // LD B,u8
-    [0x06] = {{0}, {.io = READ_PC, .ld = B, .end = true}},
+    [0x06] =
+        {{0},
+         {.io = READ_PC, .uop = LD_R8_R8, .lhs = B, .rhs = BUS, .end = true}},
 
     [0x07] = {{.undefined = true}},
     [0x08] = {{.undefined = true}},
@@ -52,7 +54,9 @@ const Instruction instructions[0x100] = {
     [0x25] = {{.undefined = true}},
 
     // LD H,u8
-    [0x26] = {{0}, {.io = READ_PC, .ld = H, .end = true}},
+    [0x26] =
+        {{0},
+         {.io = READ_PC, .uop = LD_R8_R8, .lhs = H, .rhs = BUS, .end = true}},
 
     [0x27] = {{.undefined = true}},
     [0x28] = {{.undefined = true}},
@@ -63,7 +67,9 @@ const Instruction instructions[0x100] = {
     [0x2D] = {{.undefined = true}},
 
     // LD L,u8
-    [0x2E] = {{0}, {.io = READ_PC, .ld = L, .end = true}},
+    [0x2E] =
+        {{0},
+         {.io = READ_PC, .uop = LD_R8_R8, .lhs = L, .rhs = BUS, .end = true}},
 
     [0x2F] = {{.undefined = true}},
     [0x30] = {{.undefined = true}},
@@ -82,7 +88,9 @@ const Instruction instructions[0x100] = {
     [0x3D] = {{.undefined = true}},
 
     // LD A,u8
-    [0x3E] = {{0}, {.io = READ_PC, .ld = A, .end = true}},
+    [0x3E] =
+        {{0},
+         {.io = READ_PC, .uop = LD_R8_R8, .lhs = A, .rhs = BUS, .end = true}},
 
     [0x3F] = {{.undefined = true}},
     [0x40] = {{.undefined = true}},
@@ -144,7 +152,9 @@ const Instruction instructions[0x100] = {
     [0x76] = {{.uop = HALT, .end = true}},
 
     // LD (HL),A
-    [0x77] = {{0}, {.lhs = A, .uop = LD_BUS_LHS, .io = WRITE_HL, .end = true}},
+    [0x77] =
+        {{0},
+         {.io = WRITE_HL, .uop = LD_R8_R8, .lhs = BUS, .rhs = A, .end = true}},
 
     [0x78] = {{.undefined = true}},
     [0x79] = {{.undefined = true}},
@@ -156,7 +166,7 @@ const Instruction instructions[0x100] = {
     [0x7F] = {{.undefined = true}},
 
     // ADD A,B
-    [0x80] = {{.lhs = A, .rhs = B, .uop = ADD, .ld = A, .end = true}},
+    [0x80] = {{.uop = ADD, .lhs = A, .rhs = B, .end = true}},
 
     [0x81] = {{.undefined = true}},
     [0x82] = {{.undefined = true}},
@@ -166,7 +176,7 @@ const Instruction instructions[0x100] = {
     [0x86] = {{.undefined = true}},
     [0x87] = {{.undefined = true}},
 
-    [0x88] = {{.lhs = A, .rhs = B, .uop = ADC, .ld = A, .end = true}},
+    [0x88] = {{.uop = ADC, .lhs = A, .rhs = B, .end = true}},
 
     [0x89] = {{.undefined = true}},
     [0x8A] = {{.undefined = true}},
@@ -177,7 +187,7 @@ const Instruction instructions[0x100] = {
     [0x8F] = {{.undefined = true}},
 
     // SUB A,B
-    [0x90] = {{.lhs = A, .rhs = B, .uop = SUB, .ld = A, .end = true}},
+    [0x90] = {{.uop = SUB, .lhs = A, .rhs = B, .end = true}},
 
     [0x91] = {{.undefined = true}},
     [0x92] = {{.undefined = true}},
@@ -188,7 +198,7 @@ const Instruction instructions[0x100] = {
     [0x97] = {{.undefined = true}},
 
     // SBC A,B
-    [0x98] = {{.lhs = A, .rhs = B, .uop = SBC, .ld = A, .end = true}},
+    [0x98] = {{.uop = SBC, .lhs = A, .rhs = B, .end = true}},
 
     [0x99] = {{.undefined = true}},
     [0x9A] = {{.undefined = true}},
@@ -207,7 +217,7 @@ const Instruction instructions[0x100] = {
     [0xA7] = {{.undefined = true}},
 
     // XOR A,B
-    [0xA8] = {{.lhs = A, .rhs = B, .uop = XOR, .ld = A, .end = true}},
+    [0xA8] = {{.uop = XOR, .lhs = A, .rhs = B, .end = true}},
 
     [0xA9] = {{.undefined = true}},
     [0xAA] = {{.undefined = true}},
@@ -217,7 +227,7 @@ const Instruction instructions[0x100] = {
     [0xAE] = {{.undefined = true}},
 
     // XOR A,A
-    [0xAF] = {{.lhs = A, .rhs = A, .uop = XOR, .ld = A, .end = true}},
+    [0xAF] = {{.uop = XOR, .lhs = A, .rhs = A, .end = true}},
 
     [0xB0] = {{.undefined = true}},
     [0xB1] = {{.undefined = true}},
@@ -241,9 +251,9 @@ const Instruction instructions[0x100] = {
 
     // JP u16
     [0xC3] = {{0},
-              {.io = READ_PC, .ld = TMP_LO},
-              {.io = READ_PC, .ld = TMP_HI},
-              {.uop = LD_PC_TMP, .end = true}},
+              {.io = READ_PC, .uop = LD_R8_R8, .lhs = TMP_LO, .rhs = BUS},
+              {.io = READ_PC, .uop = LD_R8_R8, .lhs = TMP_HI, .rhs = BUS},
+              {.uop = LD16_PC_TMP, .end = true}},
 
     [0xC4] = {{.undefined = true}},
     [0xC5] = {{.undefined = true}},

@@ -64,10 +64,10 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
     }
 }
 
-u8 _get_target(Cpu *cpu, Target target) {
+u8 _cpu_get(Cpu *cpu, Target target) {
     switch (target) {
         case TARGET_NONE:
-            return 0;
+            return 0xAA;
         case A:
             return cpu->a;
         case B:
@@ -116,6 +116,13 @@ void alu(u8 lhs, u8 rhs, bool sub, bool use_carry, u8 *out, u8 *flags) {
     *out = res8;
     *flags = ((res8 == 0 ? FZ : 0) | (sub ? FN : 0) | (res_h > 0x0F ? FH : 0) |
               (res16 > 0xFF ? FC : 0));
+}
+
+void _cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
+    u8 lhs_val = _cpu_get(cpu, lhs);
+    u8 rhs_val = _cpu_get(cpu, rhs);
+    alu(lhs_val, rhs_val, sub, use_carry, &lhs_val, &cpu->f);
+    _cpu_set(cpu, lhs, lhs_val);
 }
 
 void alu_inc(u8 lhs, u8 *out, u8 *flags) {
@@ -173,49 +180,49 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 
     // Section 2 - ALU Op
 
-    u8 alu_lhs = _get_target(cpu, uinst->lhs);
-    u8 alu_rhs = _get_target(cpu, uinst->rhs);
-    u8 ld_val = 0xAA;
-
     switch (uinst->uop) {
         case UOP_NONE:
-            ld_val = cpu->bus_reg;
             break;
-        case LD_BUS_LHS:
-            cpu->bus_reg = alu_lhs;
-            break;
-        case LD_PC_TMP:
+        case LD16_PC_TMP:
             cpu->pc = _cpu_tmp16(cpu);
             break;
-        case INC:
-            alu_inc(alu_lhs, &ld_val, &cpu->f);
+        case LD_R8_R8:
+            _cpu_set(cpu, uinst->lhs, _cpu_get(cpu, uinst->rhs));
             break;
-        case DEC:
-            alu_dec(alu_lhs, &ld_val, &cpu->f);
-            break;
+        case INC: {
+            u8 lhs_val = _cpu_get(cpu, uinst->lhs);
+            alu_inc(lhs_val, &lhs_val, &cpu->f);
+            _cpu_set(cpu, uinst->lhs, lhs_val);
+        } break;
+        case DEC: {
+            u8 lhs_val = _cpu_get(cpu, uinst->lhs);
+            alu_dec(lhs_val, &lhs_val, &cpu->f);
+            _cpu_set(cpu, uinst->lhs, lhs_val);
+        } break;
         case ADD:
-            alu(alu_lhs, alu_rhs, false, false, &ld_val, &cpu->f);
+            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, false);
             break;
         case ADC:
-            alu(alu_lhs, alu_rhs, false, true, &ld_val, &cpu->f);
+            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, true);
             break;
         case SUB:
-            alu(alu_lhs, alu_rhs, true, false, &ld_val, &cpu->f);
+            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, false);
             break;
         case SBC:
-            alu(alu_lhs, alu_rhs, true, true, &ld_val, &cpu->f);
+            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, true);
             break;
-        case XOR:
-            alu_xor(alu_lhs, alu_rhs, &ld_val, &cpu->f);
-            break;
+        case XOR: {
+            u8 lhs_val = _cpu_get(cpu, uinst->lhs);
+            u8 rhs_val = _cpu_get(cpu, uinst->rhs);
+            alu_xor(lhs_val, rhs_val, &lhs_val, &cpu->f);
+            _cpu_set(cpu, uinst->lhs, lhs_val);
+        } break;
         case HALT:
             cpu->halted = true;
             break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
     }
-
-    _cpu_set(cpu, uinst->ld, ld_val);
 
     // Section 3 - Bus Write
 

@@ -26,8 +26,8 @@ typedef enum {
 
 typedef enum {
     UOP_NONE = 0,
-    LD_BUS_LHS,
-    LD_PC_TMP,
+    LD16_PC_TMP,
+    LD_R8_R8,
     INC,
     DEC,
     ADD,
@@ -40,7 +40,6 @@ typedef enum {
 
 typedef struct {
     BusIo io;
-    Target ld;
     Target lhs;
     Target rhs;
     MicroOperation uop;
