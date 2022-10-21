@@ -93,11 +93,41 @@ void test_cpu_ld_xor(void) {
     assert(cpu.f == 0x80);
 }
 
+void test_cpu_inc_dec(void) {
+    const u8 prog[] = {
+        0x05,  // DEC B ; expect B == 0xFF, F == 0x40
+        0x05,  // DEC B ; expect B == 0xFE, F == 0x60
+        0x04,  // INC B ; expect B == 0xFF, F == 0x00
+        0x04,  // INC B ; expect B == 0x00, F == 0xA0
+    };
+    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    Bus bus = {.boot = rom};
+    Cpu cpu = {0};
+
+    cpu_cycle(&cpu, &bus);
+    assert(cpu.b == 0xFF);
+    assert(cpu.f == 0x40);
+
+    cpu_cycle(&cpu, &bus);
+    assert(cpu.b == 0xFE);
+    assert(cpu.f == 0x60);
+
+    cpu_cycle(&cpu, &bus);
+    assert(cpu.b == 0xFF);
+    assert(cpu.f == 0x00);
+
+    cpu_cycle(&cpu, &bus);
+    // cpu_print_info(&cpu);
+    assert(cpu.b == 0x00);
+    assert(cpu.f == 0xA0);
+}
+
 int main(void) {
     test_cart();
     test_cpu_jp();
     test_cpu_halt();
     test_cpu_ld_xor();
+    test_cpu_inc_dec();
 
     printf("\nAll tests passed!\n");
 }

@@ -25,14 +25,18 @@ typedef enum {
 typedef enum {
     UOP_NONE = 0,
     STORE_PC,
+    INC,
+    DEC,
+    ADD,
+    SUB,
     XOR,
 } MicroOperation;
 
 typedef struct {
     BusIo io;
     Target ld;
-    Target alu0;
-    Target alu1;
+    Target lhs;
+    Target rhs;
     Target st;
     MicroOperation uop;
     bool halt;

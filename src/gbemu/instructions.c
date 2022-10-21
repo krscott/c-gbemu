@@ -6,6 +6,12 @@ const Instruction instructions[0x100] = {
     // NOP
     [0x00] = {{.end = true}},
 
+    // INC B
+    [0x04] = {{.lhs = B, .uop = INC, .st = B, .end = true}},
+
+    // DEC B
+    [0x05] = {{.lhs = B, .uop = DEC, .st = B, .end = true}},
+
     // LD B,u8
     [0x06] = {{0}, {.io = FETCH_PC, .ld = B, .end = true}},
 
@@ -16,10 +22,10 @@ const Instruction instructions[0x100] = {
     [0x76] = {{.halt = true, .end = true}},
 
     // XOR A,B
-    [0xA8] = {{.alu0 = A, .alu1 = B, .uop = XOR, .st = A, .end = true}},
+    [0xA8] = {{.lhs = A, .rhs = B, .uop = XOR, .st = A, .end = true}},
 
     // XOR A,A
-    [0xAF] = {{.alu0 = A, .alu1 = A, .uop = XOR, .st = A, .end = true}},
+    [0xAF] = {{.lhs = A, .rhs = A, .uop = XOR, .st = A, .end = true}},
 
     // JP u16
     [0xC3] = {{0},

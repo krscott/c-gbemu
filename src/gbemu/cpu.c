@@ -7,7 +7,7 @@
 #define FH 0x20
 #define FC 0x10
 
-u16 cpu_tmp16(Cpu *cpu) {
+u16 _cpu_tmp16(Cpu *cpu) {
     return (((u16)cpu->tmp_hi) << 8) | ((u16)cpu->tmp_lo);
 }
 
@@ -84,10 +84,42 @@ u8 _cpu_get(Cpu *cpu, Target target) {
     }
 }
 
-/// @brief Get zero flag
-/// @param value
-/// @return 0x80 if value == 0, otherwise 0
-u8 chk_z(u8 value) { return value == 0 ? FZ : 0; }
+u8 chk_z(u8 res) { return res == 0 ? FZ : 0; }
+u8 chk_c(u16 res16) { return res16 > 0xFF ? FC : 0; }
+u8 chk_h(u8 lhs, u8 rhs, u8 res) { return (lhs ^ rhs ^ res) & 0x10 ? FH : 0; }
+
+u8 neg(u8 x) { return x == 0 ? 0 : (~x) + 1; }
+
+void alu_add(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+    u16 res16 = (u16)lhs + (u16)rhs;
+    u8 res = (u8)res16;
+    *flags = chk_z(res) | chk_h(lhs, rhs, res) | chk_c(res16);
+    *out = res;
+}
+
+void alu_sub(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+    alu_add(lhs, neg(rhs), out, flags);
+    *flags |= FN;
+}
+
+void alu_inc(u8 lhs, u8 *out, u8 *flags) {
+    u8 new_flags = 0;
+    alu_add(lhs, 1, out, &new_flags);
+    // Preserve carry flag
+    *flags = (*flags & FC) | (new_flags & (~FC));
+}
+
+void alu_dec(u8 lhs, u8 *out, u8 *flags) {
+    u8 new_flags = 0;
+    alu_sub(lhs, 1, out, &new_flags);
+    // Preserve carry flag
+    *flags = (*flags & FC) | (new_flags & (~FC));
+}
+
+void alu_xor(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+    *out = lhs ^ rhs;
+    *flags = chk_z(*out);
+}
 
 void cpu_cycle(Cpu *cpu, Bus *bus) {
     assert(cpu);
@@ -108,8 +140,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     }
 
     u8 ld_val = 0;
-    u8 alu0_val = 0;
-    u8 alu1_val = 0;
+    u8 alu_lhs = 0;
+    u8 alu_rhs = 0;
     u8 st_val = 0;
 
     switch (uinst->io) {
@@ -124,8 +156,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 
     _cpu_set(cpu, uinst->ld, ld_val);
 
-    alu0_val = _cpu_get(cpu, uinst->alu0);
-    alu1_val = _cpu_get(cpu, uinst->alu1);
+    alu_lhs = _cpu_get(cpu, uinst->lhs);
+    alu_rhs = _cpu_get(cpu, uinst->rhs);
 
     // By default, ld_val should pass-through to st_val
     st_val = ld_val;
@@ -134,11 +166,22 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case UOP_NONE:
             break;
         case STORE_PC:
-            cpu->pc = cpu_tmp16(cpu);
+            cpu->pc = _cpu_tmp16(cpu);
+            break;
+        case INC:
+            alu_inc(alu_lhs, &st_val, &cpu->f);
+            break;
+        case DEC:
+            alu_dec(alu_lhs, &st_val, &cpu->f);
+            break;
+        case ADD:
+            alu_add(alu_lhs, alu_rhs, &st_val, &cpu->f);
+            break;
+        case SUB:
+            alu_sub(alu_lhs, alu_rhs, &st_val, &cpu->f);
             break;
         case XOR:
-            st_val = alu0_val ^ alu1_val;
-            cpu->f = chk_z(st_val);
+            alu_xor(alu_lhs, alu_rhs, &st_val, &cpu->f);
             break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
