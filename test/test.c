@@ -11,6 +11,18 @@
 #error "NDEBUG must not be set for testing"
 #endif
 
+#define ASSERT(cond)                               \
+    do {                                           \
+        if (!cond) panic("Assert failed: " #cond); \
+    } while (0)
+#define ASSERT_EQ(a, b, fmt)                                                 \
+    do {                                                                     \
+        if (a != b)                                                          \
+            panicf("Assert failed: " #a " (" fmt ") == " #b " (" fmt ")", a, \
+                   b);                                                       \
+    } while (0)
+#define ASSERT_EQ_U8(a, b) ASSERT_EQ(a, b, "0x%02X")
+
 void test_cart(void) {
     const char *filename = "roms/01-special.gb";
 
@@ -18,12 +30,12 @@ void test_cart(void) {
     const CartRom *cart defer(cart_dealloc) =
         cart_alloc_from_file(filename, &err);
 
-    assert(err == ROM_OK);
-    assert(cart_is_valid_header(cart));
+    ASSERT_EQ_U8(err, ROM_OK);
+    ASSERT(cart_is_valid_header(cart));
 
     // Peek some arbitrary memory location
-    assert(cart_read(cart, 0x200) == 0x47);
-    assert(cart_read(cart, 0x210) == 0xC3);
+    ASSERT_EQ_U8(cart_read(cart, 0x200), 0x47);
+    ASSERT_EQ_U8(cart_read(cart, 0x210), 0xC3);
 }
 
 void test_microcode_is_valid(void) {
@@ -54,19 +66,19 @@ void test_cpu_jp(void) {
 
     // Read opcode
     cpu_cycle(&cpu, &bus);
-    assert(cpu.opcode == 0xC3);
-    assert(cpu.cycle == 1);
-    assert(cpu.pc == 1);
+    ASSERT_EQ_U8(cpu.opcode, 0xC3);
+    ASSERT_EQ_U8(cpu.cycle, 1);
+    ASSERT_EQ_U8(cpu.pc, 1);
 
     // Read address
     cpu_cycle(&cpu, &bus);
     cpu_cycle(&cpu, &bus);
-    assert(cpu.pc == 3);
+    ASSERT_EQ_U8(cpu.pc, 3);
 
     // Jump
     cpu_cycle(&cpu, &bus);
     // cpu_print_info(&cpu);
-    assert(cpu.pc == 0xBBAA);
+    ASSERT_EQ_U8(cpu.pc, 0xBBAA);
 }
 
 void test_cpu_halt(void) {
@@ -77,9 +89,9 @@ void test_cpu_halt(void) {
     Bus bus = {.boot = rom};
     Cpu cpu = {0};
 
-    assert(!cpu.halted);
+    ASSERT(!cpu.halted);
     cpu_cycle(&cpu, &bus);
-    assert(cpu.halted);
+    ASSERT(cpu.halted);
 }
 
 void test_cpu_ld_xor(void) {
@@ -100,20 +112,20 @@ void test_cpu_ld_xor(void) {
         cpu_cycle(&cpu, &bus);
     }
 
-    assert(cpu.a == 0xA5);
-    assert(cpu.f == 0x00);
+    ASSERT_EQ_U8(cpu.a, 0xA5);
+    ASSERT_EQ_U8(cpu.f, 0x00);
 
     cpu.halted = false;
     while (!cpu.halted) {
         cpu_cycle(&cpu, &bus);
     }
-    assert(cpu.a == 0x00);
-    assert(cpu.f == 0x80);
+    ASSERT_EQ_U8(cpu.a, 0x00);
+    ASSERT_EQ_U8(cpu.f, 0x80);
 }
 
 void test_cpu_inc_dec(void) {
     const u8 prog[] = {
-        0x05,  // DEC B ; expect B == 0xFF, F == 0x40
+        0x05,  // DEC B ; expect B == 0xFF, F == 0x60
         0x05,  // DEC B ; expect B == 0xFE, F == 0x60
         0x04,  // INC B ; expect B == 0xFF, F == 0x00
         0x04,  // INC B ; expect B == 0x00, F == 0xA0
@@ -123,21 +135,21 @@ void test_cpu_inc_dec(void) {
     Cpu cpu = {0};
 
     cpu_cycle(&cpu, &bus);
-    assert(cpu.b == 0xFF);
-    assert(cpu.f == 0x40);
+    ASSERT_EQ_U8(cpu.b, 0xFF);
+    ASSERT_EQ_U8(cpu.f, 0x60);
 
     cpu_cycle(&cpu, &bus);
-    assert(cpu.b == 0xFE);
-    assert(cpu.f == 0x60);
+    ASSERT_EQ_U8(cpu.b, 0xFE);
+    ASSERT_EQ_U8(cpu.f, 0x60);
 
     cpu_cycle(&cpu, &bus);
-    assert(cpu.b == 0xFF);
-    assert(cpu.f == 0x00);
+    ASSERT_EQ_U8(cpu.b, 0xFF);
+    ASSERT_EQ_U8(cpu.f, 0x00);
 
     cpu_cycle(&cpu, &bus);
     // cpu_print_info(&cpu);
-    assert(cpu.b == 0x00);
-    assert(cpu.f == 0xA0);
+    ASSERT_EQ_U8(cpu.b, 0x00);
+    ASSERT_EQ_U8(cpu.f, 0xA0);
 }
 
 void test_cpu_hl(void) {
@@ -156,7 +168,86 @@ void test_cpu_hl(void) {
     while (!cpu.halted) {
         cpu_cycle(&cpu, &bus);
     }
-    assert(bus_read(&bus, 0xC000) == 0x55);
+    ASSERT_EQ_U8(bus_read(&bus, 0xC000), 0x55);
+}
+
+void test_cpu_arith(void) {
+    const u8 prog[] = {
+        0x3E, 0x01,  // LD A,$01
+        0x06, 0x02,  // LD B,$02
+        0x80,        // ADD A,B  ; A: $03, F: 0000
+        0x76,        // HALT     ; #1
+                     //
+        0x3E, 0xFF,  // LD A,$FF
+        0x06, 0x01,  // LD B,$01
+        0x80,        // ADD A,B  ; A: $00, F: 1011
+        0x76,        // HALT     ; #2
+                     //
+        0x88,        // ADC A,B  ; A: $02, F: 0000
+        0x76,        // HALT     ; #3
+                     //
+        0x3E, 0x01,  // LD A,$01
+        0x06, 0x02,  // LD B,$02
+        0x90,        // SUB A,B  ; A: $FF, F: 0100
+        0x76,        // HALT     ; #4
+                     //
+        0x98,        // SBC A,B  ; A: $FD, F: 0111
+        0x76,        // HALT     ; #5
+                     //
+        0x98,        // SBC A,B  ; A: $FA, F: 0111
+        0x76,        // HALT     ; #6
+    };
+    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
+    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
+    Bus bus = {.boot = rom, .work_ram = work_ram};
+    Cpu cpu = {0};
+
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    // Halt 1
+    ASSERT_EQ_U8(cpu.a, 0x03);
+    ASSERT_EQ_U8(cpu.f, 0x00);
+
+    cpu.halted = false;
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    // Halt 2
+    ASSERT_EQ_U8(cpu.a, 0x00);
+    ASSERT_EQ_U8(cpu.f, 0xB0);
+
+    cpu.halted = false;
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    // Halt 3
+    ASSERT_EQ_U8(cpu.a, 0x02);
+    ASSERT_EQ_U8(cpu.f, 0x00);
+
+    cpu.halted = false;
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    // Halt 4
+    ASSERT_EQ_U8(cpu.a, 0xFF);
+    ASSERT_EQ_U8(cpu.f, 0x40);
+
+    cpu.halted = false;
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    // Halt 5
+    ASSERT_EQ_U8(cpu.a, 0xFD);
+    ASSERT_EQ_U8(cpu.f, 0x70);
+
+    cpu.halted = false;
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    // Halt 6
+    ASSERT_EQ_U8(cpu.a, 0xFA);
+    ASSERT_EQ_U8(cpu.f, 0x70);
 }
 
 int main(void) {
@@ -167,6 +258,7 @@ int main(void) {
     test_cpu_ld_xor();
     test_cpu_inc_dec();
     test_cpu_hl();
+    test_cpu_arith();
 
     printf("\nAll tests passed!\n");
 }

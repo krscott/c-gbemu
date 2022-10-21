@@ -98,31 +98,34 @@ u8 chk_c(u16 res16) { return res16 > 0xFF ? FC : 0; }
 u8 chk_h(u8 lhs, u8 rhs, u8 res) { return (lhs ^ rhs ^ res) & 0x10 ? FH : 0; }
 
 u8 neg(u8 x) { return x == 0 ? 0 : (~x) + 1; }
+u16 neg16(u16 x) { return x == 0 ? 0 : (~x) + 1; }
 
-void alu_add(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
-    u16 res16 = (u16)lhs + (u16)rhs;
-    u8 res = (u8)res16;
-    *flags = chk_z(res) | chk_h(lhs, rhs, res) | chk_c(res16);
-    *out = res;
-}
+void alu(u8 lhs, u8 rhs, bool sub, bool use_carry, u8 *out, u8 *flags) {
+    u16 carry = (use_carry && *flags & FC) ? 1 : 0;
 
-void alu_sub(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
-    alu_add(lhs, neg(rhs), out, flags);
-    *flags |= FN;
+    if (sub) {
+        carry = !carry;
+        rhs = ~rhs;
+    }
+
+    u16 res16 = (u16)lhs + (u16)rhs + carry;
+    u8 res8 = (u8)(res16 & 0xFF);
+
+    u8 res_h = (lhs & 0xF) + (rhs & 0xF) + (u8)carry;
+
+    *out = res8;
+    *flags = ((res8 == 0 ? FZ : 0) | (sub ? FN : 0) | (res_h > 0x0F ? FH : 0) |
+              (res16 > 0xFF ? FC : 0));
 }
 
 void alu_inc(u8 lhs, u8 *out, u8 *flags) {
-    u8 new_flags = 0;
-    alu_add(lhs, 1, out, &new_flags);
-    // Preserve carry flag
-    *flags = (*flags & FC) | (new_flags & (~FC));
+    *out = (u8)((u16)lhs + 1);
+    *flags = chk_z(*out) | (*out & 0xF ? 0 : FH) | (*flags & FC);
 }
 
 void alu_dec(u8 lhs, u8 *out, u8 *flags) {
-    u8 new_flags = 0;
-    alu_sub(lhs, 1, out, &new_flags);
-    // Preserve carry flag
-    *flags = (*flags & FC) | (new_flags & (~FC));
+    *out = lhs == 0 ? ~lhs : lhs - 1;
+    *flags = chk_z(*out) | FN | (*out & 0xF ? FH : 0) | (*flags & FC);
 }
 
 void alu_xor(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
@@ -191,10 +194,16 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             alu_dec(alu_lhs, &ld_val, &cpu->f);
             break;
         case ADD:
-            alu_add(alu_lhs, alu_rhs, &ld_val, &cpu->f);
+            alu(alu_lhs, alu_rhs, false, false, &ld_val, &cpu->f);
+            break;
+        case ADC:
+            alu(alu_lhs, alu_rhs, false, true, &ld_val, &cpu->f);
             break;
         case SUB:
-            alu_sub(alu_lhs, alu_rhs, &ld_val, &cpu->f);
+            alu(alu_lhs, alu_rhs, true, false, &ld_val, &cpu->f);
+            break;
+        case SBC:
+            alu(alu_lhs, alu_rhs, true, true, &ld_val, &cpu->f);
             break;
         case XOR:
             alu_xor(alu_lhs, alu_rhs, &ld_val, &cpu->f);

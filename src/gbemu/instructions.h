@@ -31,7 +31,9 @@ typedef enum {
     INC,
     DEC,
     ADD,
+    ADC,
     SUB,
+    SBC,
     XOR,
 } MicroOperation;
 

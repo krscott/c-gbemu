@@ -154,7 +154,10 @@ const Instruction instructions[0x100] = {
     [0x7D] = {{.undefined = true}},
     [0x7E] = {{.undefined = true}},
     [0x7F] = {{.undefined = true}},
-    [0x80] = {{.undefined = true}},
+
+    // ADD A,B
+    [0x80] = {{.lhs = A, .rhs = B, .uop = ADD, .ld = A, .end = true}},
+
     [0x81] = {{.undefined = true}},
     [0x82] = {{.undefined = true}},
     [0x83] = {{.undefined = true}},
@@ -162,7 +165,9 @@ const Instruction instructions[0x100] = {
     [0x85] = {{.undefined = true}},
     [0x86] = {{.undefined = true}},
     [0x87] = {{.undefined = true}},
-    [0x88] = {{.undefined = true}},
+
+    [0x88] = {{.lhs = A, .rhs = B, .uop = ADC, .ld = A, .end = true}},
+
     [0x89] = {{.undefined = true}},
     [0x8A] = {{.undefined = true}},
     [0x8B] = {{.undefined = true}},
@@ -170,7 +175,10 @@ const Instruction instructions[0x100] = {
     [0x8D] = {{.undefined = true}},
     [0x8E] = {{.undefined = true}},
     [0x8F] = {{.undefined = true}},
-    [0x90] = {{.undefined = true}},
+
+    // SUB A,B
+    [0x90] = {{.lhs = A, .rhs = B, .uop = SUB, .ld = A, .end = true}},
+
     [0x91] = {{.undefined = true}},
     [0x92] = {{.undefined = true}},
     [0x93] = {{.undefined = true}},
@@ -178,7 +186,10 @@ const Instruction instructions[0x100] = {
     [0x95] = {{.undefined = true}},
     [0x96] = {{.undefined = true}},
     [0x97] = {{.undefined = true}},
-    [0x98] = {{.undefined = true}},
+
+    // SBC A,B
+    [0x98] = {{.lhs = A, .rhs = B, .uop = SBC, .ld = A, .end = true}},
+
     [0x99] = {{.undefined = true}},
     [0x9A] = {{.undefined = true}},
     [0x9B] = {{.undefined = true}},
