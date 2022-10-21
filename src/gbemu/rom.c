@@ -4,19 +4,19 @@
 
 Rom *rom_alloc_uninit(size_t size) {
     Rom *rom = malloc(sizeof(Rom) + sizeof(u8) * size);
-    rom->size = size;
+    if (rom) rom->size = size;
     return rom;
 }
 
 const Rom *rom_alloc_blank(size_t size) {
     Rom *rom = rom_alloc_uninit(size);
-    memset(rom->data, 0, size);
+    if (rom) memset(rom->data, 0, size);
     return rom;
 }
 
-const Rom *rom_from_buf(const u8 *data, size_t n) {
+const Rom *rom_alloc_from_buf(const u8 *data, size_t n) {
     Rom *rom = rom_alloc_uninit(n);
-    memcpy(rom->data, data, n / sizeof(data[0]));
+    if (rom) memcpy(rom->data, data, n / sizeof(data[0]));
     return rom;
 }
 

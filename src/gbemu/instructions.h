@@ -6,7 +6,8 @@
 
 typedef enum {
     IO_NONE = 0,
-    FETCH_PC,
+    READ_PC,
+    WRITE_HL,
 } BusIo;
 
 typedef enum {
@@ -18,13 +19,15 @@ typedef enum {
     E,
     H,
     L,
+    BUS,
     TMP_LO,
     TMP_HI,
 } Target;
 
 typedef enum {
     UOP_NONE = 0,
-    STORE_PC,
+    LD_BUS_LHS,
+    LD_PC_TMP,
     INC,
     DEC,
     ADD,
@@ -37,10 +40,10 @@ typedef struct {
     Target ld;
     Target lhs;
     Target rhs;
-    Target st;
     MicroOperation uop;
     bool halt;
     bool end;
+    bool undefined;
 } MicroInstr;
 
 typedef MicroInstr Instruction[MICRO_INSTRUCTION_SIZE];

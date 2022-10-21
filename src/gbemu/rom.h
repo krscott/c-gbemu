@@ -15,7 +15,7 @@ typedef struct {
 } Rom;
 
 const Rom *rom_alloc_blank(size_t size);
-const Rom *rom_from_buf(const u8 *data, size_t n);
+const Rom *rom_alloc_from_buf(const u8 *data, size_t n);
 
 /// @brief Load and validate a ROM from file and store on the heap. Calls
 /// malloc() internally.

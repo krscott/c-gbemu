@@ -2,11 +2,15 @@
 
 #include "cart.h"
 #include "common.h"
+#include "ram.h"
 #include "rom.h"
+
+#define WORK_RAM_SIZE 0x2000
 
 typedef struct {
     const Rom *boot;
     const CartRom *cart;
+    Ram *work_ram;
 
     bool is_bootrom_disabled;
 } Bus;

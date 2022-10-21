@@ -18,12 +18,19 @@ typedef struct {
     bool halted;
     size_t cycle;
 
+    u8 bus_reg;
     u8 tmp_lo;
     u8 tmp_hi;
 
     u8 opcode;
     u8 ucode_step;
 } Cpu;
+
+u16 to_u16(u8 hi, u8 lo);
+u16 cpu_af(Cpu *cpu);
+u16 cpu_bc(Cpu *cpu);
+u16 cpu_de(Cpu *cpu);
+u16 cpu_hl(Cpu *cpu);
 
 void cpu_cycle(Cpu *cpu, Bus *bus);
 

@@ -26,11 +26,29 @@ void test_cart(void) {
     assert(cart_read(cart, 0x210) == 0xC3);
 }
 
+void test_microcode_is_valid(void) {
+    for (size_t opcode = 0; opcode <= 0xFF; ++opcode) {
+        for (size_t ustep = 0; ustep < MICRO_INSTRUCTION_SIZE; ++ustep) {
+            const MicroInstr *uinst = instructions_get_uinst(opcode, ustep);
+
+            // Can't do multiple bus interactions on the same step,
+            // and step 0 has an implicit fetch.
+            if (ustep == 0 && uinst->io != IO_NONE) {
+                panicf("Illegal IO on step 0 in opcode $%02X", (u8)opcode);
+            }
+
+            if (instructions_is_last_ustep(opcode, ustep)) {
+                break;
+            }
+        }
+    }
+}
+
 void test_cpu_jp(void) {
     const u8 prog[] = {
         0xC3, 0xAA, 0xBB,  // JP $BBAA
     };
-    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
     Bus bus = {.boot = rom};
     Cpu cpu = {0};
 
@@ -55,7 +73,7 @@ void test_cpu_halt(void) {
     const u8 prog[] = {
         0x76,  // HALT
     };
-    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
     Bus bus = {.boot = rom};
     Cpu cpu = {0};
 
@@ -74,7 +92,7 @@ void test_cpu_ld_xor(void) {
         0xAF,        // XOR A     ; expect A == 0x00, F == 0x80
         0x76,        // HALT
     };
-    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
     Bus bus = {.boot = rom};
     Cpu cpu = {0};
 
@@ -100,7 +118,7 @@ void test_cpu_inc_dec(void) {
         0x04,  // INC B ; expect B == 0xFF, F == 0x00
         0x04,  // INC B ; expect B == 0x00, F == 0xA0
     };
-    const Rom *rom defer(rom_dealloc) = rom_from_buf(prog, sizeof(prog));
+    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
     Bus bus = {.boot = rom};
     Cpu cpu = {0};
 
@@ -122,12 +140,33 @@ void test_cpu_inc_dec(void) {
     assert(cpu.f == 0xA0);
 }
 
+void test_cpu_hl(void) {
+    const u8 prog[] = {
+        0x2E, 0x00,  // LD L,$00
+        0x26, 0xC0,  // LD H,$C0
+        0x3E, 0x55,  // LD A,$55
+        0x77,        // LD (HL),A
+        0x76,        // HALT
+    };
+    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
+    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
+    Bus bus = {.boot = rom, .work_ram = work_ram};
+    Cpu cpu = {0};
+
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    assert(bus_read(&bus, 0xC000) == 0x55);
+}
+
 int main(void) {
     test_cart();
+    test_microcode_is_valid();
     test_cpu_jp();
     test_cpu_halt();
     test_cpu_ld_xor();
     test_cpu_inc_dec();
+    test_cpu_hl();
 
     printf("\nAll tests passed!\n");
 }

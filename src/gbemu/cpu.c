@@ -7,9 +7,13 @@
 #define FH 0x20
 #define FC 0x10
 
-u16 _cpu_tmp16(Cpu *cpu) {
-    return (((u16)cpu->tmp_hi) << 8) | ((u16)cpu->tmp_lo);
-}
+u16 to_u16(u8 hi, u8 lo) { return (((u16)hi) << 8) | ((u16)lo); }
+u16 cpu_af(Cpu *cpu) { return to_u16(cpu->a, cpu->f); }
+u16 cpu_bc(Cpu *cpu) { return to_u16(cpu->b, cpu->c); }
+u16 cpu_de(Cpu *cpu) { return to_u16(cpu->d, cpu->e); }
+u16 cpu_hl(Cpu *cpu) { return to_u16(cpu->h, cpu->l); }
+
+u16 _cpu_tmp16(Cpu *cpu) { return to_u16(cpu->tmp_hi, cpu->tmp_lo); }
 
 void _cpu_inc_counters(Cpu *cpu) {
     if (instructions_is_last_ustep(cpu->opcode, cpu->ucode_step)) {
@@ -46,6 +50,9 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
         case L:
             cpu->l = value;
             break;
+        case BUS:
+            cpu->bus_reg = value;
+            break;
         case TMP_LO:
             cpu->tmp_lo = value;
             break;
@@ -57,7 +64,7 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
     }
 }
 
-u8 _cpu_get(Cpu *cpu, Target target) {
+u8 _get_target(Cpu *cpu, Target target) {
     switch (target) {
         case TARGET_NONE:
             return 0;
@@ -75,6 +82,8 @@ u8 _cpu_get(Cpu *cpu, Target target) {
             return cpu->h;
         case L:
             return cpu->l;
+        case BUS:
+            return cpu->bus_reg;
         case TMP_LO:
             return cpu->tmp_lo;
         case TMP_HI:
@@ -126,74 +135,96 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     if (cpu->halted) return;
 
     if (cpu->ucode_step == 0) {
+        // Read next opcode
         cpu->opcode = bus_read(bus, cpu->pc++);
-        cpu->tmp_lo = 0;
-        cpu->tmp_hi = 0;
+
+        // Reset intra-micro-instruction registers to "uninitialized" state
+        cpu->tmp_lo = 0xAA;
+        cpu->tmp_hi = 0xAA;
+        cpu->bus_reg = 0xAA;
     }
 
     const MicroInstr *uinst =
         instructions_get_uinst(cpu->opcode, cpu->ucode_step);
 
-    // Make sure we aren't doing multiple bus interactions on the same step
-    if (cpu->ucode_step == 0 && uinst->io != IO_NONE) {
-        panicf("Illegal IO on step 0 in opcode $%02X", cpu->opcode);
+    if (uinst->undefined) {
+        panicf("Executing undefined instr: $%02X (step %d)", cpu->opcode,
+               cpu->ucode_step);
     }
 
-    u8 ld_val = 0;
-    u8 alu_lhs = 0;
-    u8 alu_rhs = 0;
-    u8 st_val = 0;
+    // Make sure we aren't doing multiple bus interactions on the same step
+    assert(cpu->ucode_step != 0 || uinst->io == IO_NONE);
+
+    // Section 1 - Bus Read
 
     switch (uinst->io) {
         case IO_NONE:
+        case WRITE_HL:
             break;
-        case FETCH_PC:
-            ld_val = bus_read(bus, cpu->pc++);
+        case READ_PC:
+            cpu->bus_reg = bus_read(bus, cpu->pc++);
             break;
         default:
             panicf("Unhandled input case: %d", uinst->io);
     }
 
-    _cpu_set(cpu, uinst->ld, ld_val);
+    // Section 2 - ALU Op
 
-    alu_lhs = _cpu_get(cpu, uinst->lhs);
-    alu_rhs = _cpu_get(cpu, uinst->rhs);
-
-    // By default, ld_val should pass-through to st_val
-    st_val = ld_val;
+    u8 alu_lhs = _get_target(cpu, uinst->lhs);
+    u8 alu_rhs = _get_target(cpu, uinst->rhs);
+    u8 ld_val = 0xAA;
 
     switch (uinst->uop) {
         case UOP_NONE:
+            ld_val = cpu->bus_reg;
             break;
-        case STORE_PC:
+        case LD_BUS_LHS:
+            cpu->bus_reg = alu_lhs;
+            break;
+        case LD_PC_TMP:
             cpu->pc = _cpu_tmp16(cpu);
             break;
         case INC:
-            alu_inc(alu_lhs, &st_val, &cpu->f);
+            alu_inc(alu_lhs, &ld_val, &cpu->f);
             break;
         case DEC:
-            alu_dec(alu_lhs, &st_val, &cpu->f);
+            alu_dec(alu_lhs, &ld_val, &cpu->f);
             break;
         case ADD:
-            alu_add(alu_lhs, alu_rhs, &st_val, &cpu->f);
+            alu_add(alu_lhs, alu_rhs, &ld_val, &cpu->f);
             break;
         case SUB:
-            alu_sub(alu_lhs, alu_rhs, &st_val, &cpu->f);
+            alu_sub(alu_lhs, alu_rhs, &ld_val, &cpu->f);
             break;
         case XOR:
-            alu_xor(alu_lhs, alu_rhs, &st_val, &cpu->f);
+            alu_xor(alu_lhs, alu_rhs, &ld_val, &cpu->f);
             break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
     }
 
-    _cpu_set(cpu, uinst->st, st_val);
+    _cpu_set(cpu, uinst->ld, ld_val);
+
+    // Section 3 - Bus Write
+
+    switch (uinst->io) {
+        case IO_NONE:
+        case READ_PC:
+            break;
+        case WRITE_HL:
+            bus_write(bus, cpu_hl(cpu), cpu->bus_reg);
+            break;
+        default:
+            panicf("Unhandled output case: %d", uinst->io);
+    }
+
+    // Section 4 - Counters/Cleanup
+
+    _cpu_inc_counters(cpu);
 
     if (uinst->halt) {
         cpu->halted = true;
     }
-
-    _cpu_inc_counters(cpu);
 }
 
 void cpu_print_info(Cpu *cpu) {
@@ -204,5 +235,7 @@ void cpu_print_info(Cpu *cpu) {
     printf("  H: %02X  L: %02X\n", cpu->h, cpu->l);
     printf("  SP: %04X\n", cpu->sp);
     printf("  PC: %04X\n", cpu->pc);
+    printf("  tmp: %04X busreg: %02X\n", to_u16(cpu->tmp_hi, cpu->tmp_lo),
+           cpu->bus_reg);
     printf("  op: %02X  step: %d\n", cpu->opcode, cpu->ucode_step);
 }

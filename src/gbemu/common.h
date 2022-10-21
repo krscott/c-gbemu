@@ -3,33 +3,9 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 
-// Logging macros
-
-#define errorf(fmt, ...) \
-    fprintf(stderr, "%s:%d ERROR " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-
-#define error(msg) fprintf(stderr, "%s:%d ERROR " msg "\n", __FILE__, __LINE__)
-
-#define infof(fmt, ...) \
-    fprintf(stderr, "%s:%d INFO " fmt "\n", __FILE__, __LINE__, ##__VA_ARGS__)
-
-#define info(msg) fprintf(stderr, "%s:%d INFO " msg "\n", __FILE__, __LINE__)
-
-#define panicf(fmt, ...)                                             \
-    do {                                                             \
-        fprintf(stderr, "%s:%d PANIC " fmt "\n", __FILE__, __LINE__, \
-                ##__VA_ARGS__);                                      \
-        abort();                                                     \
-    } while (0)
-
-#define panic(msg)                                                    \
-    do {                                                              \
-        fprintf(stderr, "%s:%d PANIC " msg "\n", __FILE__, __LINE__); \
-        abort();                                                      \
-    } while (0)
+#include "logging.h"
 
 // Type abbreviations
 
