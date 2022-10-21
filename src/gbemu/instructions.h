@@ -35,6 +35,7 @@ typedef enum {
     SUB,
     SBC,
     XOR,
+    HALT,
 } MicroOperation;
 
 typedef struct {
@@ -43,7 +44,6 @@ typedef struct {
     Target lhs;
     Target rhs;
     MicroOperation uop;
-    bool halt;
     bool end;
     bool undefined;
 } MicroInstr;

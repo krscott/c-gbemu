@@ -141,7 +141,7 @@ const Instruction instructions[0x100] = {
     [0x75] = {{.undefined = true}},
 
     // HALT
-    [0x76] = {{.halt = true, .end = true}},
+    [0x76] = {{.uop = HALT, .end = true}},
 
     // LD (HL),A
     [0x77] = {{0}, {.lhs = A, .uop = LD_BUS_LHS, .io = WRITE_HL, .end = true}},

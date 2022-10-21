@@ -208,6 +208,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case XOR:
             alu_xor(alu_lhs, alu_rhs, &ld_val, &cpu->f);
             break;
+        case HALT:
+            cpu->halted = true;
+            break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
     }
@@ -230,10 +233,6 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     // Section 4 - Counters/Cleanup
 
     _cpu_inc_counters(cpu);
-
-    if (uinst->halt) {
-        cpu->halted = true;
-    }
 }
 
 void cpu_print_info(Cpu *cpu) {
