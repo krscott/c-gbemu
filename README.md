@@ -28,7 +28,7 @@ pacman -S \
     mingw64/mingw-w64-x86_64-SDL2_net
 ```
 
-### Build
+## Build
 
 Build debug
 ```
@@ -57,3 +57,7 @@ These clang-format settings are used for VSCode:
 "C_Cpp.clang_format_fallbackStyle": "{ BasedOnStyle: Google, IndentWidth: 4 }"
 ```
 [More info](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
+
+## Test ROMs
+
+Test ROMs by [Blargg](https://web.archive.org/web/20160830121433/http://blargg.8bitalley.com/parodius/gb-tests/).
