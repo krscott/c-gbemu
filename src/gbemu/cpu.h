@@ -19,8 +19,8 @@ typedef struct {
     size_t cycle;
 
     u8 bus_reg;
-    u8 tmp_lo;
-    u8 tmp_hi;
+    u8 jp_lo;
+    u8 jp_hi;
 
     u8 opcode;
     u8 ucode_step;

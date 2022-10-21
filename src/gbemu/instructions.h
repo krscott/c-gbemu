@@ -25,6 +25,7 @@ typedef enum {
 typedef enum {
     TARGET_NONE = 0,
     A,
+    F,
     B,
     C,
     D,

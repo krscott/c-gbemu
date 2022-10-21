@@ -6,13 +6,13 @@ from typing import Any, Optional
 
 def microinst_str(uinst: dict[str, Any]) -> str:
     if not uinst:
-        return "{0}"
-    return "{" + ", ".join(f".{k} = {v}" for k, v in uinst.items()) + "}"
+        return "0"
+    return ", ".join(f".{k} = {v}" for k, v in uinst.items())
 
 
 def op_str(op: int, instructions: list[dict[str, Any]]) -> str:
     s = "},{".join(microinst_str(uinst) for uinst in instructions)
-    return f"    [0x{op:02X}] = {{{s}}},"
+    return f"    [0x{op:02X}] = {{{{{s}}}}},"
 
 
 R8_TARGETS = [

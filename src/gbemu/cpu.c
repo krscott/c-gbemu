@@ -13,7 +13,7 @@ u16 cpu_bc(Cpu *cpu) { return to_u16(cpu->b, cpu->c); }
 u16 cpu_de(Cpu *cpu) { return to_u16(cpu->d, cpu->e); }
 u16 cpu_hl(Cpu *cpu) { return to_u16(cpu->h, cpu->l); }
 
-u16 _cpu_tmp16(Cpu *cpu) { return to_u16(cpu->tmp_hi, cpu->tmp_lo); }
+u16 _cpu_tmp16(Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
 
 void _cpu_inc_counters(Cpu *cpu) {
     if (instructions_is_last_ustep(cpu->opcode, cpu->ucode_step)) {
@@ -54,10 +54,10 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
             cpu->bus_reg = value;
             break;
         case JP_LO:
-            cpu->tmp_lo = value;
+            cpu->jp_lo = value;
             break;
         case JP_HI:
-            cpu->tmp_hi = value;
+            cpu->jp_hi = value;
             break;
         default:
             panicf("Unhandled load-target case: %d", target);
@@ -85,9 +85,9 @@ u8 _cpu_get(Cpu *cpu, Target target) {
         case BUS:
             return cpu->bus_reg;
         case JP_LO:
-            return cpu->tmp_lo;
+            return cpu->jp_lo;
         case JP_HI:
-            return cpu->tmp_hi;
+            return cpu->jp_hi;
         default:
             panicf("Unhandled load-target case: %d", target);
     }
@@ -149,8 +149,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         cpu->opcode = bus_read(bus, cpu->pc++);
 
         // Reset intra-micro-instruction registers to "uninitialized" state
-        cpu->tmp_lo = 0xAA;
-        cpu->tmp_hi = 0xAA;
+        cpu->jp_lo = 0xAA;
+        cpu->jp_hi = 0xAA;
         cpu->bus_reg = 0xAA;
     }
 
@@ -220,6 +220,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case HALT:
             cpu->halted = true;
             break;
+        case JP:
+            cpu->pc = to_u16(cpu->jp_hi, cpu->jp_lo);
+            break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
     }
@@ -250,7 +253,7 @@ void cpu_print_info(Cpu *cpu) {
     printf("  H: %02X  L: %02X\n", cpu->h, cpu->l);
     printf("  SP: %04X\n", cpu->sp);
     printf("  PC: %04X\n", cpu->pc);
-    printf("  tmp: %04X busreg: %02X\n", to_u16(cpu->tmp_hi, cpu->tmp_lo),
+    printf("  tmp: %04X busreg: %02X\n", to_u16(cpu->jp_hi, cpu->jp_lo),
            cpu->bus_reg);
     printf("  op: %02X  step: %d\n", cpu->opcode, cpu->ucode_step);
 }
