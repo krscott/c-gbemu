@@ -68,6 +68,12 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
                     "rhs": "SP_HI", "io": "WRITE_JP_INC"},
             ]
 
+        if op == 0x10:
+            return [
+                {},
+                {"uop": "HALT", "io": "READ_PC_INC"},
+            ]
+
         # JR i8
         if op == 0x18:
             return [
@@ -78,7 +84,7 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
             ]
 
         # JR cond,i8
-        if op & 7 == 0:
+        if op in (0x20, 0x28, 0x30, 0x38):
             cond = COND[(op >> 4) & 3]
 
             return [
