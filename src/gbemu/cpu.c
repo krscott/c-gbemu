@@ -356,7 +356,29 @@ void cpu_init(Cpu *cpu) {
     cpu->bus_reg = 0;
     cpu->jp_lo = 0;
     cpu->jp_hi = 0;
+    cpu->opcode = 0;
+    cpu->ucode_step = 0;
+}
 
+void cpu_init_post_boot_dmg(Cpu *cpu) {
+    cpu->a = 0x01;
+    cpu->f = FZ;
+    cpu->b = 0x00;
+    cpu->c = 0x13;
+    cpu->d = 0x00;
+    cpu->e = 0xD8;
+    cpu->h = 0x01;
+    cpu->l = 0x4D;
+    cpu->pc = 0x0100;
+    cpu->sp = 0xFFFE;
+
+    cpu->ime = true;
+    cpu->halted = false;
+    cpu->cycle = 0;
+
+    cpu->bus_reg = 0;
+    cpu->jp_lo = 0;
+    cpu->jp_hi = 0;
     cpu->opcode = 0;
     cpu->ucode_step = 0;
 }
