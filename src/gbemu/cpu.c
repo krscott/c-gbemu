@@ -688,16 +688,29 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 void cpu_print_trace(Cpu *cpu, Bus *bus) {
     if (cpu->ucode_step == 0) {
         u8 pc0 = bus_debug_peek(bus, cpu->pc);
-        u8 pc1 = bus_debug_peek(bus, cpu->pc + 1);
-        u8 pc2 = bus_debug_peek(bus, cpu->pc + 2);
         const char *mnemonic = instructions_get_mnemonic(pc0);
+        u8 len = instructions_get_length(pc0);
+
+        printf("%04X: %02X", cpu->pc, pc0);
+
+        if (len > 1) {
+            u8 pc1 = bus_debug_peek(bus, cpu->pc + 1);
+            printf(" %02X", pc1);
+        } else {
+            printf("   ");
+        }
+        if (len > 2) {
+            u8 pc2 = bus_debug_peek(bus, cpu->pc + 2);
+            printf(" %02X", pc2);
+        } else {
+            printf("   ");
+        }
+
         printf(
-            "%04X: %02X %02X %02X ; %-14s| A:%02X F:%02X B:%02X C:%02X D:%02X "
+            " ; %-14s| A:%02X F:%02X B:%02X C:%02X D:%02X "
             "E:%02X H:%02X L:%02X SP:%04X\n",
-            cpu->pc, pc0, pc1, pc2, mnemonic, cpu->a, cpu->f, cpu->b, cpu->c,
-            cpu->d, cpu->e, cpu->h, cpu->l, cpu->sp);
-    } else {
-        // Do nothing for now
+            mnemonic, cpu->a, cpu->f, cpu->b, cpu->c, cpu->d, cpu->e, cpu->h,
+            cpu->l, cpu->sp);
     }
 }
 

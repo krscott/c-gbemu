@@ -14,11 +14,21 @@ def microinst_str(uinst: dict[str, Any]) -> str:
     return ", ".join(f".{k} = {v}" for k, v in uinst.items())
 
 
-def op_str(op: int, label: str, instructions: list[dict[str, Any]]) -> str:
-    sep = "},\n               {"
-    s = sep.join(microinst_str(uinst) for uinst in instructions)
+def inst_length(instruction: list[dict[str, Any]]) -> int:
+    len = 1
+    for uinst in instruction:
+        if uinst.get("io") == "READ_PC_INC":
+            len += 1
+    return len
 
-    return f"    [0x{op:02X}] = {{\"{label}\",\n              {{{{{s}}}}}}},"
+
+def op_str(op: int, label: str, instruction: list[dict[str, Any]]) -> str:
+    sep = "},\n               {"
+    s = sep.join(microinst_str(uinst) for uinst in instruction)
+
+    length = inst_length(instruction)
+
+    return f"    [0x{op:02X}] = {{\"{label}\", {length},\n              {{{{{s}}}}}}},"
 
 
 R8_TARGETS = [
@@ -602,4 +612,6 @@ bool instructions_is_last_ustep(u8 opcode, u8 ustep) {
 
 const char* instructions_get_mnemonic(u8 opcode) {
     return instructions[opcode].mnemonic;
-}""", file=dest_file)
+}
+
+u8 instructions_get_length(u8 opcode) { return instructions[opcode].length; }""", file=dest_file)

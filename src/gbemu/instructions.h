@@ -102,6 +102,7 @@ typedef struct MicroInstr {
 
 typedef struct Instruction {
     const char* mnemonic;
+    u8 length;
     MicroInstr micro_instructions[MICRO_INSTRUCTION_SIZE];
 } Instruction;
 
@@ -110,3 +111,4 @@ const MicroInstr* instructions_get_uinst(u8 opcode, u8 ustep);
 bool instructions_is_last_ustep(u8 opcode, u8 ustep);
 
 const char* instructions_get_mnemonic(u8 opcode);
+u8 instructions_get_length(u8 opcode);
