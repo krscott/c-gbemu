@@ -64,6 +64,14 @@ typedef enum {
     JP_HL,
     RST,
     PREFIX_OP,
+    RLCA,
+    RRCA,
+    RLA,
+    RRA,
+    DAA,
+    CPL,
+    SCF,
+    CCF,
 } MicroOperation;
 
 typedef enum {

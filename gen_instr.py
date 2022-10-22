@@ -175,6 +175,23 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
 
             return [{}, uinst]
 
+        if op == 0x07:
+            return [{"uop": "RLCA"}]
+        if op == 0x0F:
+            return [{"uop": "RRCA"}]
+        if op == 0x17:
+            return [{"uop": "RLA"}]
+        if op == 0x1F:
+            return [{"uop": "RRA"}]
+        if op == 0x27:
+            return [{"uop": "DAA"}]
+        if op == 0x2F:
+            return [{"uop": "CPL"}]
+        if op == 0x37:
+            return [{"uop": "SCF"}]
+        if op == 0x3F:
+            return [{"uop": "CCF"}]
+
     # HALT
     if op == 0x76:
         return [{"uop": "HALT"}]

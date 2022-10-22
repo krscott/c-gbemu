@@ -119,12 +119,7 @@ u8 _cpu_get(Cpu *cpu, Target target) {
     }
 }
 
-u8 chk_z(u8 res) { return res == 0 ? FZ : 0; }
-u8 chk_c(u16 res16) { return res16 > 0xFF ? FC : 0; }
-u8 chk_h(u8 lhs, u8 rhs, u8 res) { return (lhs ^ rhs ^ res) & 0x10 ? FH : 0; }
-
-u8 neg(u8 x) { return x == 0 ? 0 : (~x) + 1; }
-u16 neg16(u16 x) { return x == 0 ? 0 : (~x) + 1; }
+#define chk_z(x) (x == 0 ? FZ : 0)
 
 void alu(u8 lhs, u8 rhs, bool sub, bool use_carry, u8 *out, u8 *flags) {
     u16 carry = (use_carry && *flags & FC) ? 1 : 0;
@@ -161,9 +156,163 @@ void alu_dec(u8 lhs, u8 *out, u8 *flags) {
     *flags = chk_z(*out) | FN | (*out & 0xF ? FH : 0) | (*flags & FC);
 }
 
-void alu_xor(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+void bitwise_and(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+    *out = lhs & rhs;
+    *flags = chk_z(*out) | FH;
+}
+
+void bitwise_xor(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     *out = lhs ^ rhs;
     *flags = chk_z(*out);
+}
+
+void bitwise_or(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+    *out = lhs | rhs;
+    *flags = chk_z(*out);
+}
+
+void bitwise_cp(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+    // Same as SUB r8,r8 but result is ignored
+    (void)out;
+    u8 dummy;
+    alu(lhs, rhs, true, false, &dummy, flags);
+}
+
+void _cpu_run_bitwise_op(Cpu *cpu, Target lhs, Target rhs,
+                         void (*bitwise_op)(u8, u8, u8 *, u8 *)) {
+    u8 lhs_val = _cpu_get(cpu, lhs);
+    u8 rhs_val = _cpu_get(cpu, rhs);
+    bitwise_op(lhs_val, rhs_val, &lhs_val, &cpu->f);
+    _cpu_set(cpu, lhs, lhs_val);
+}
+
+void bit_rlc(u8 *value, u8 *flags) {
+    *value = to_u16(*value, *value) >> 7;
+    *flags = chk_z(*value) | (*value & 1 ? FC : 0);
+}
+
+void bit_rrc(u8 *value, u8 *flags) {
+    *value = to_u16(*value, *value) >> 1;
+    *flags = chk_z(*value) | (*value & 1 ? FC : 0);
+}
+
+void bit_rl(u8 *value, u8 *flags) {
+    bool new_carry = *value & 0x80;
+    // Move carry flag to bit 7 so that it is shifted into 0
+    *value = to_u16(*value, *flags << 3) >> 7;
+    *flags = chk_z(*value) | (new_carry ? FC : 0);
+}
+
+void bit_rr(u8 *value, u8 *flags) {
+    bool new_carry = *value & 1;
+    // Move carry flag to bit 9 so that it is shifted into 8
+    *value = to_u16(*flags >> 4, *value) >> 1;
+    *flags = chk_z(*value) | (new_carry ? FC : 0);
+}
+
+void bit_sla(u8 *value, u8 *flags) {
+    bool new_carry = *value & 0x80;
+    *value <<= 1;
+    *flags = chk_z(*value) | (new_carry ? FC : 0);
+}
+
+void bit_sra(u8 *value, u8 *flags) {
+    bool new_carry = *value & 1;
+    // Arithmetic shift: sign bit is preserved
+    *value = (*value & 0x80) | (*value >> 1);
+    *flags = chk_z(*value) | (new_carry ? FC : 0);
+}
+
+void bit_srl(u8 *value, u8 *flags) {
+    bool new_carry = *value & 1;
+    *value = *value >> 1;
+    *flags = chk_z(*value) | (new_carry ? FC : 0);
+}
+
+void bit_swap(u8 *value, u8 *flags) {
+    *value = (*value << 4) | (*value >> 4);
+    *flags = chk_z(*value);
+}
+
+void _cpu_run_bitshift_op(Cpu *cpu, Target target,
+                          void (*bitshift_op)(u8 *, u8 *)) {
+    u8 value = _cpu_get(cpu, target);
+    bitshift_op(&value, &cpu->f);
+    _cpu_set(cpu, target, value);
+}
+
+void _cpu_run_prefix_op(Cpu *cpu, Target target) {
+    u8 bitmask = 1 << ((cpu->opcode >> 3) & 7);
+
+    switch (cpu->opcode >> 6) {
+        case 0:
+            // Bit-shift ops
+            switch (cpu->opcode >> 3) {
+                case 0:
+                    return _cpu_run_bitshift_op(cpu, target, bit_rlc);
+                case 1:
+                    return _cpu_run_bitshift_op(cpu, target, bit_rrc);
+                case 2:
+                    return _cpu_run_bitshift_op(cpu, target, bit_rl);
+                case 3:
+                    return _cpu_run_bitshift_op(cpu, target, bit_rr);
+                case 4:
+                    return _cpu_run_bitshift_op(cpu, target, bit_sla);
+                case 5:
+                    return _cpu_run_bitshift_op(cpu, target, bit_sra);
+                case 6:
+                    return _cpu_run_bitshift_op(cpu, target, bit_swap);
+                case 7:
+                    return _cpu_run_bitshift_op(cpu, target, bit_srl);
+                default:
+                    // unreachable
+                    assert(false);
+                    return;
+            }
+        case 1: {
+            // Check bit
+            bool is_zero = (_cpu_get(cpu, target) & bitmask) == 0;
+            cpu->f = (is_zero ? FZ : 0) | FH | (cpu->f & FC);
+            return;
+        }
+        case 2: {
+            // Reset bit
+            _cpu_set(cpu, target, _cpu_get(cpu, target) & (~bitmask));
+            return;
+        }
+        case 3: {
+            // Set bit
+            _cpu_set(cpu, target, _cpu_get(cpu, target) | bitmask);
+            return;
+        }
+        default:
+            // unreachable
+            assert(false);
+            return;
+    }
+}
+
+void daa(u8 *value, u8 *flags) {
+    // Z is set as normal
+    // N is unchanged
+    // H flag is always cleared
+    // C is potentially set during this function
+
+    if (*flags & FN) {
+        // After subtraction, adjust if carry/half-carry occurred
+        if (*flags & FC) *value -= 0x60;
+        if (*flags & FH) *value -= 6;
+    } else {
+        // After addition, adjust if carry/half-carry occurred, or if value
+        // is out of bounds
+        if (*flags & FC || *value > 0x99) {
+            *value += 0x60;
+            *flags |= FC;
+        }
+        if (*flags & FH || (*value & 0x0F) > 0x09) *value += 6;
+    }
+
+    *flags = (*flags & (FC | FN)) | chk_z(*value);
 }
 
 void cpu_cycle(Cpu *cpu, Bus *bus) {
@@ -295,10 +444,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, true);
             break;
         case XOR: {
-            u8 lhs_val = _cpu_get(cpu, uinst->lhs);
-            u8 rhs_val = _cpu_get(cpu, uinst->rhs);
-            alu_xor(lhs_val, rhs_val, &lhs_val, &cpu->f);
-            _cpu_set(cpu, uinst->lhs, lhs_val);
+            _cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_xor);
         } break;
         case HALT:
             cpu->halted = true;
@@ -316,6 +462,37 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         case RST:
             cpu->pc = cpu->opcode & 0x38;
+            break;
+        case RLCA:
+            _cpu_run_bitshift_op(cpu, A, bit_rlc);
+            break;
+        case RRCA:
+            _cpu_run_bitshift_op(cpu, A, bit_rrc);
+            break;
+        case RLA:
+            _cpu_run_bitshift_op(cpu, A, bit_rl);
+            break;
+        case RRA:
+            _cpu_run_bitshift_op(cpu, A, bit_rr);
+            break;
+        case PREFIX_OP:
+            _cpu_run_prefix_op(cpu, uinst->lhs);
+            break;
+        case DAA: {
+            daa(&cpu->a, &cpu->f);
+            break;
+        }
+        case CPL:
+            cpu->a ^= 0xFF;
+            cpu->f |= FN | FH;
+            break;
+        case SCF:
+            cpu->f &= ~(FN | FH);
+            cpu->f |= FC;
+            break;
+        case CCF:
+            cpu->f &= ~(FN | FH);
+            cpu->f ^= FC;
             break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
