@@ -1,30 +1,30 @@
 #include "gb.h"
 
 GameBoy *gb_alloc_with_cart(const char *cart_filename, RomLoadErr *err) {
-    const CartRom *cart = cart_alloc_from_file(cart_filename, err);
-    if (!cart) goto alloc_cart_failed;
+    const CartRom *cart = NULL;
+    GameBoy *gb = NULL;
+    Ram *work_ram = NULL;
 
-    GameBoy *gb = malloc(sizeof(GameBoy));
-    if (!gb) goto alloc_gb_failed;
+    cart = cart_alloc_from_file(cart_filename, err);
+    if (!cart) goto gb_alloc_with_cart__error;
+
+    gb = malloc(sizeof(GameBoy));
+    if (!gb) goto gb_alloc_with_cart__error;
 
     cpu_init_post_boot_dmg(&gb->cpu);
     bus_init_booted(&gb->bus);
 
-    Ram *work_ram = ram_alloc_blank(WORK_RAM_SIZE);
-    if (!work_ram) goto alloc_ram_failed;
+    work_ram = ram_alloc_blank(WORK_RAM_SIZE);
+    if (!work_ram) goto gb_alloc_with_cart__error;
 
     gb->bus.cart = cart;
     gb->bus.work_ram = work_ram;
 
     return gb;
 
-alloc_ram_failed:
+gb_alloc_with_cart__error:
     gb_dealloc(&gb);
-
-alloc_gb_failed:
     cart_dealloc(&cart);
-
-alloc_cart_failed:
     return NULL;
 }
 
