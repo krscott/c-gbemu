@@ -1,8 +1,22 @@
 # c-gbemu
 
-![build status](https://github.com/krscott/c-gbemu/actions/workflows/c.yml/badge.svg)
+[![build status](https://github.com/krscott/c-gbemu/actions/workflows/c.yml/badge.svg)](https://github.com/krscott/c-gbemu/actions)
 
 A Work-in-Progress Gameboy emulator written in C.
+
+No graphics yet, but the CPU is mostly functional.
+
+## Usage
+
+Run `c-gbemu` with a ROM as an argument:
+```
+./c-gbemu Tetris.gb
+```
+
+The console will display a trace of CPU operations and bus read/writes:
+
+![CPU Trace Example](docs/trace.png "CPU Trace Example")
+
 
 ## Windows Setup
 
