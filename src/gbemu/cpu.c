@@ -30,6 +30,11 @@ u16 cpu_hl_postdec(Cpu *cpu) {
     return x;
 }
 u16 cpu_jp_reg(Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
+u16 cpu_jp_reg_postinc(Cpu *cpu) {
+    u16 x = to_u16(cpu->jp_hi, cpu->jp_lo);
+    split_u16(x + 1, &cpu->jp_hi, &cpu->jp_lo);
+    return x;
+}
 
 void _cpu_set(Cpu *cpu, Target target, u8 value) {
     switch (target) {
@@ -77,6 +82,9 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
         case JP_HI:
             cpu->jp_hi = value;
             break;
+        case IM_FF:
+            panic("Cannot write to immediate value");
+            break;
         default:
             panicf("Unhandled load-target case: %d", target);
     }
@@ -114,6 +122,8 @@ u8 _cpu_get(Cpu *cpu, Target target) {
             return cpu->jp_lo;
         case JP_HI:
             return cpu->jp_hi;
+        case IM_FF:
+            return 0xFF;
         default:
             panicf("Unhandled load-target case: %d", target);
     }
@@ -144,6 +154,18 @@ void _cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
     u8 rhs_val = _cpu_get(cpu, rhs);
     alu(lhs_val, rhs_val, sub, use_carry, &lhs_val, &cpu->f);
     _cpu_set(cpu, lhs, lhs_val);
+}
+
+void alu_u16_plus_i8(u16 lhs16, u8 rhs_lo, u16 *out, u8 *flags) {
+    u8 lhs_lo = low_byte(lhs16);
+    u8 lhs_hi = high_byte(lhs16);
+    // Extend sign bit
+    u8 rhs_hi = rhs_lo & 0x80 ? 0xFF : 0;
+    u8 res_lo, res_hi;
+    alu(lhs_lo, rhs_lo, false, false, &res_lo, flags);
+    alu(lhs_hi, rhs_hi, false, true, &res_hi, flags);
+    *out = to_u16(res_hi, res_lo);
+    *flags &= ~(FZ | FN);
 }
 
 void alu_inc(u8 lhs, u8 *out, u8 *flags) {
@@ -373,6 +395,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case READ_SP_INC:
             cpu->bus_reg = bus_read(bus, cpu->sp++);
             break;
+        case READ_JP:
+            cpu->bus_reg = bus_read(bus, cpu_jp_reg(cpu));
+            break;
         default:
             panicf("Unhandled input case: %d", uinst->io);
     }
@@ -421,6 +446,19 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->f = orig_z | (cpu->f & ~FZ);
             break;
         }
+        case ADD16_SP_I8:
+            // Two register sets in the same cycle is probably not technically
+            // accurate, but it shouldn't make a difference
+            alu_u16_plus_i8(cpu->sp, _cpu_get(cpu, uinst->lhs), &cpu->sp,
+                            &cpu->f);
+            break;
+        case ADD16_HL_SP_PLUS_I8:
+            // Two register sets in the same cycle is probably not technically
+            // accurate, but it shouldn't make a difference
+            u16 hl;
+            alu_u16_plus_i8(cpu->sp, _cpu_get(cpu, uinst->lhs), &hl, &cpu->f);
+            split_u16(hl, &cpu->h, &cpu->l);
+            break;
         case INC: {
             u8 lhs_val = _cpu_get(cpu, uinst->lhs);
             alu_inc(lhs_val, &lhs_val, &cpu->f);
@@ -509,6 +547,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case READ_HL_INC:
         case READ_HL_DEC:
         case READ_SP_INC:
+        case READ_JP:
             break;
         case WRITE_BC:
             bus_write(bus, cpu_bc(cpu), cpu->bus_reg);
@@ -529,7 +568,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             bus_write(bus, --cpu->sp, cpu->bus_reg);
             break;
         case WRITE_JP_INC:
-
+            bus_write(bus, cpu_jp_reg_postinc(cpu), cpu->bus_reg);
+            break;
         default:
             panicf("Unhandled output case: %d", uinst->io);
     }

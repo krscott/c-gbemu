@@ -13,6 +13,7 @@ typedef enum {
     READ_HL_INC,
     READ_HL_DEC,
     READ_SP_INC,
+    READ_JP,
     WRITE_BC,
     WRITE_DE,
     WRITE_HL,
@@ -39,6 +40,7 @@ typedef enum {
     PC_HI,
     JP_LO,
     JP_HI,
+    IM_FF,
 } Target;
 
 typedef enum {
@@ -48,6 +50,8 @@ typedef enum {
     DEC16,
     ADD16_LO,
     ADD16_HI,
+    ADD16_SP_I8,
+    ADD16_HL_SP_PLUS_I8,
     INC,
     DEC,
     ADD,

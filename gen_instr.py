@@ -239,6 +239,43 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
                 {"uop": "JP"}
             ]
 
+        # LD (FF00+u8),A
+        if op == 0xE0:
+            return [
+                {"uop": "LD_R8_R8", "lhs": "JP_HI", "rhs": "IM_FF"},
+                {"uop": "LD_R8_R8", "lhs": "JP_LO",
+                    "rhs": "BUS", "io": "READ_PC_INC"},
+                {"uop": "LD_R8_R8", "lhs": "BUS", "rhs": "A", "io": "WRITE_JP_INC"},
+            ]
+
+        # ADD SP,i8
+        if op == 0xE8:
+            return [
+                {},
+                # Timing might be wrong, but it shouldn't matter
+                {"uop": "ADD16_SP_I8", "lhs": "BUS", "io": "READ_PC_INC"},
+                {},
+                {},
+            ]
+
+        # LD A,(FF00+u8)
+        if op == 0xF0:
+            return [
+                {"uop": "LD_R8_R8", "lhs": "JP_HI", "rhs": "IM_FF"},
+                {"uop": "LD_R8_R8", "lhs": "JP_LO",
+                    "rhs": "BUS", "io": "READ_PC_INC"},
+                {"uop": "LD_R8_R8", "lhs": "A", "rhs": "BUS", "io": "READ_JP"},
+            ]
+
+        # LD HL,SP+i8
+        if op == 0xF8:
+            return [
+                {},
+                # Timing might be wrong, but it shouldn't matter
+                {"uop": "ADD16_HL_SP_PLUS_I8", "lhs": "BUS", "io": "READ_PC_INC"},
+                {},
+            ]
+
         # RET/RETI
         # Cannot combine with `RET cond` because these have 1 less cycle
         if op in (0xC9, 0xD9):

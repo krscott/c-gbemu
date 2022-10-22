@@ -49,6 +49,12 @@ void test_microcode_is_valid(void) {
                 panicf("Illegal IO on step 0 in opcode $%02X", (u8)opcode);
             }
 
+            // If there is a rhs, there must be an lhs
+            if (uinst->rhs && !uinst->lhs) {
+                panicf("Opcode $%02X step %d has RHS, but no LHS", (u8)opcode,
+                       (u8)ustep);
+            }
+
             if (instructions_is_last_ustep(opcode, ustep)) {
                 break;
             }
