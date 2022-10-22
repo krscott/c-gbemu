@@ -46,7 +46,7 @@ void cpu_set(Cpu *cpu, Target target, u8 value) {
             cpu->a = value;
             break;
         case F:
-            cpu->f = value;
+            cpu->f = value & 0xF0;
             break;
         case B:
             cpu->b = value;
@@ -660,6 +660,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     }
 
     ++cpu->cycle;
+
+    // Should never write to lower nibble of F
+    assert((cpu->f & 0x0F) == 0);
 }
 
 void cpu_print_trace(Cpu *cpu, Bus *bus) {
