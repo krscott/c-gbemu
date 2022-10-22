@@ -683,11 +683,16 @@ void cpu_print_trace(Cpu *cpu, Bus *bus) {
             printf("   ");
         }
 
+        char z = (cpu->f & FZ) ? 'Z' : '-';
+        char n = (cpu->f & FN) ? 'N' : '-';
+        char h = (cpu->f & FH) ? 'H' : '-';
+        char c = (cpu->f & FC) ? 'C' : '-';
+
         printf(
-            " ; %-14s| A:%02X F:%02X B:%02X C:%02X D:%02X "
-            "E:%02X H:%02X L:%02X SP:%04X\n",
-            mnemonic, cpu->a, cpu->f, cpu->b, cpu->c, cpu->d, cpu->e, cpu->h,
-            cpu->l, cpu->sp);
+            " ; %-14s| A:%02X F:%c%c%c%c BC:%02X%02X DE:%02X%02X HL:%02X%02X "
+            "SP:%04X\n",
+            mnemonic, cpu->a, z, n, h, c, cpu->b, cpu->c, cpu->d, cpu->e,
+            cpu->h, cpu->l, cpu->sp);
     }
 }
 
