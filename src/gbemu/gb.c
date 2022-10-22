@@ -4,27 +4,36 @@ GameBoy *gb_alloc_with_cart(const char *cart_filename, RomLoadErr *err) {
     const CartRom *cart = NULL;
     GameBoy *gb = NULL;
     Ram *work_ram = NULL;
+    Ram *high_ram = NULL;
 
-    cart = cart_alloc_from_file(cart_filename, err);
-    if (!cart) goto gb_alloc_with_cart__error;
+    do {
+        gb = malloc(sizeof(GameBoy));
+        if (!gb) break;
+        cpu_init_post_boot_dmg(&gb->cpu);
+        bus_init_booted(&gb->bus);
 
-    gb = malloc(sizeof(GameBoy));
-    if (!gb) goto gb_alloc_with_cart__error;
+        cart = cart_alloc_from_file(cart_filename, err);
+        if (!cart) break;
+        gb->bus.cart = cart;
 
-    cpu_init_post_boot_dmg(&gb->cpu);
-    bus_init_booted(&gb->bus);
+        work_ram = ram_alloc_blank(WORK_RAM_SIZE);
+        if (!work_ram) break;
+        gb->bus.work_ram = work_ram;
 
-    work_ram = ram_alloc_blank(WORK_RAM_SIZE);
-    if (!work_ram) goto gb_alloc_with_cart__error;
+        high_ram = ram_alloc_blank(HIGH_RAM_SIZE);
+        if (!high_ram) break;
+        gb->bus.high_ram = high_ram;
 
-    gb->bus.cart = cart;
-    gb->bus.work_ram = work_ram;
+        return gb;
+    } while (0);
 
-    return gb;
-
-gb_alloc_with_cart__error:
+    // Error cleanup
+    // Ok to pass NULL to these functions
+    ram_dealloc(&high_ram);
+    ram_dealloc(&work_ram);
     gb_dealloc(&gb);
     cart_dealloc(&cart);
+
     return NULL;
 }
 

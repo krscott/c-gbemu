@@ -1,5 +1,7 @@
 #include "cpu.h"
 
+#include <string.h>
+
 #include "instructions.h"
 
 #define FZ 0x80
@@ -351,29 +353,15 @@ void daa(u8 *value, u8 *flags) {
 }
 
 void cpu_init(Cpu *cpu) {
-    cpu->a = 0;
-    cpu->f = 0;
-    cpu->b = 0;
-    cpu->c = 0;
-    cpu->d = 0;
-    cpu->e = 0;
-    cpu->h = 0;
-    cpu->l = 0;
-    cpu->pc = 0;
-    cpu->sp = 0;
+    assert(cpu);
+    memset(cpu, 0, sizeof(Cpu));
 
     cpu->ime = true;
-    cpu->halted = false;
-    cpu->cycle = 0;
-
-    cpu->bus_reg = 0;
-    cpu->jp_lo = 0;
-    cpu->jp_hi = 0;
-    cpu->opcode = 0;
-    cpu->ucode_step = 0;
 }
 
 void cpu_init_post_boot_dmg(Cpu *cpu) {
+    cpu_init(cpu);
+
     cpu->a = 0x01;
     cpu->f = FZ;
     cpu->b = 0x00;
@@ -384,16 +372,6 @@ void cpu_init_post_boot_dmg(Cpu *cpu) {
     cpu->l = 0x4D;
     cpu->pc = 0x0100;
     cpu->sp = 0xFFFE;
-
-    cpu->ime = true;
-    cpu->halted = false;
-    cpu->cycle = 0;
-
-    cpu->bus_reg = 0;
-    cpu->jp_lo = 0;
-    cpu->jp_hi = 0;
-    cpu->opcode = 0;
-    cpu->ucode_step = 0;
 }
 
 void cpu_cycle(Cpu *cpu, Bus *bus) {

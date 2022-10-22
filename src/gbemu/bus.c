@@ -1,14 +1,15 @@
 #include "bus.h"
 
+#include <string.h>
+
 #include "cart.h"
 #include "rom.h"
 
 void bus_init_booted(Bus *bus) {
     assert(bus);
 
-    bus->boot = NULL;
-    bus->cart = NULL;
-    bus->work_ram = NULL;
+    memset(bus, 0, sizeof(Bus));
+
     bus->is_bootrom_disabled = true;
 }
 
@@ -20,7 +21,7 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
         return rom_read(bus->boot, address);
     }
 
-    if (address < 0x8000) {
+    else if (address < 0x8000) {
         if (!bus->cart) {
             if (!debug_peek) {
                 errorf("Attempting to read cart at $%04X but no cart inserted",
@@ -33,13 +34,13 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
     }
 
     // 0x8000..=0x9FFF VRAM
-    if (address < 0xA000) {
+    else if (address < 0xA000) {
         if (!debug_peek) panicf("TODO: VRAM $%04X", address);
         return 0;
     }
 
     // 0xA000..=0xBFFF External RAM
-    if (address < 0xC000) {
+    else if (address < 0xC000) {
         if (!debug_peek) panicf("TODO: ExRAM $%04X", address);
         return 0;
     }
@@ -47,7 +48,7 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
     // 0xC000..=0xCFFF Work RAM
     // 0xD000..=0xDFFF Work RAM
     // 0xE000..=0xFDFF Mirror RAM
-    if (address < 0xFE00) {
+    else if (address < 0xFE00) {
         if (!bus->work_ram) {
             if (!debug_peek) {
                 panicf("Attempting to read work RAM at $%04X but it is NULL",
@@ -56,11 +57,50 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
             return 0;
         }
 
-        return ram_read(bus->work_ram, (address - 0xC000) % 0x2000);
+        if (!debug_peek && address >= 0xE000) {
+            errorf("Attempting to read Mirror RAM at $%04X", address);
+        }
+
+        // Modulus to "reflect" mirror RAM
+        return ram_read(bus->work_ram, (address - 0xC000) % WORK_RAM_SIZE);
     }
 
-    if (!debug_peek) panicf("Unmapped addr read: $%04X", address);
-    return 0;
+    // 0xFE00..=FE9F Sprite attribute table (OAM)
+    else if (address < 0xFEA0) {
+        if (!debug_peek) panicf("TODO: OAM $%04X", address);
+        return 0;
+    }
+
+    // 0xFEA0..=0xFEFF Not Usable
+    else if (address < 0xFF00) {
+        if (!debug_peek) panicf("Prohibitied memory access $%04X", address);
+        return 0;
+    }
+
+    // 0xFF00..=0xFF7F I/O Registers
+    else if (address < 0xFF80) {
+        if (!debug_peek) panicf("TODO: I/O $%04X", address);
+        return 0;
+    }
+
+    // 0xFF80..=0xFFFE High RAM
+    else if (address < 0xFFFF) {
+        if (!bus->high_ram) {
+            if (!debug_peek) {
+                panicf("Attempting to read high RAM at $%04X but it is NULL",
+                       address);
+            }
+            return 0;
+        }
+
+        u16 internal_address = address - 0xFF80;
+        assert(internal_address < HIGH_RAM_SIZE);
+
+        return ram_read(bus->high_ram, internal_address);
+    }
+
+    assert(address == 0xFFFF);
+    return bus->ie;
 }
 
 u8 bus_read(const Bus *bus, u16 address) {
@@ -83,13 +123,13 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     }
 
     // 0x8000..=0x9FFF VRAM
-    if (address < 0xA000) {
+    else if (address < 0xA000) {
         panicf("TODO: VRAM $%04X", address);
         return;
     }
 
     // 0xA000..=0xBFFF External RAM
-    if (address < 0xC000) {
+    else if (address < 0xC000) {
         panicf("TODO: ExRAM $%04X", address);
         return;
     }
@@ -97,16 +137,55 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     // 0xC000..=0xCFFF Work RAM
     // 0xD000..=0xDFFF Work RAM
     // 0xE000..=0xFDFF Mirror RAM
-    if (address < 0xFE00) {
+    else if (address < 0xFE00) {
         if (!bus->work_ram) {
-            panicf("Attempting to read work RAM at $%04X but it is NULL",
+            panicf("Attempting to write work RAM at $%04X but it is NULL",
                    address);
             return;
         }
 
+        if (address >= 0xE000) {
+            errorf("Attempting to write Mirror RAM at $%04X", address);
+        }
+
+        // Modulus to "reflect" mirror RAM
         ram_write(bus->work_ram, (address - 0xC000) % 0x2000, value);
         return;
     }
 
-    panicf("Unmapped addr write: $%04X", address);
+    // 0xFE00..=FE9F Sprite attribute table (OAM)
+    else if (address < 0xFEA0) {
+        panicf("TODO: OAM $%04X", address);
+        return;
+    }
+
+    // 0xFEA0..=0xFEFF Not Usable
+    else if (address < 0xFF00) {
+        panicf("Prohibitied memory access $%04X", address);
+        return;
+    }
+
+    // 0xFF00..=0xFF7F I/O Registers
+    else if (address < 0xFF80) {
+        panicf("TODO: I/O $%04X", address);
+        return;
+    }
+
+    // 0xFF80..=0xFFFE High RAM
+    else if (address < 0xFFFF) {
+        if (!bus->high_ram) {
+            panicf("Attempting to write high RAM at $%04X but it is NULL",
+                   address);
+            return;
+        }
+
+        u16 internal_address = address - 0xFF80;
+        assert(internal_address < HIGH_RAM_SIZE);
+
+        ram_write(bus->high_ram, internal_address, value);
+        return;
+    }
+
+    assert(address == 0xFFFF);
+    bus->ie = value;
 }

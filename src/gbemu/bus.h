@@ -6,11 +6,14 @@
 #include "rom.h"
 
 #define WORK_RAM_SIZE 0x2000
+#define HIGH_RAM_SIZE 0x007F
 
 typedef struct Bus {
     const Rom *boot;
     const CartRom *cart;
     Ram *work_ram;
+    Ram *high_ram;
+    u8 ie;
 
     bool is_bootrom_disabled;
 } Bus;
