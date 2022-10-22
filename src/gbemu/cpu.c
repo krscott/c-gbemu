@@ -36,7 +36,7 @@ u16 cpu_jp_reg_postinc(Cpu *cpu) {
     return x;
 }
 
-void _cpu_set(Cpu *cpu, Target target, u8 value) {
+void cpu_set(Cpu *cpu, Target target, u8 value) {
     switch (target) {
         case TARGET_NONE:
             break;
@@ -90,7 +90,7 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
     }
 }
 
-u8 _cpu_get(Cpu *cpu, Target target) {
+u8 cpu_get(Cpu *cpu, Target target) {
     switch (target) {
         case TARGET_NONE:
             return 0xAA;
@@ -149,11 +149,11 @@ void alu(u8 lhs, u8 rhs, bool sub, bool use_carry, u8 *out, u8 *flags) {
               (res16 > 0xFF ? FC : 0));
 }
 
-void _cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
-    u8 lhs_val = _cpu_get(cpu, lhs);
-    u8 rhs_val = _cpu_get(cpu, rhs);
+void cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
+    u8 lhs_val = cpu_get(cpu, lhs);
+    u8 rhs_val = cpu_get(cpu, rhs);
     alu(lhs_val, rhs_val, sub, use_carry, &lhs_val, &cpu->f);
-    _cpu_set(cpu, lhs, lhs_val);
+    cpu_set(cpu, lhs, lhs_val);
 }
 
 void alu_u16_plus_i8(u16 lhs16, u8 rhs_lo, u16 *out, u8 *flags) {
@@ -200,12 +200,12 @@ void bitwise_cp(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     alu(lhs, rhs, true, false, &dummy, flags);
 }
 
-void _cpu_run_bitwise_op(Cpu *cpu, Target lhs, Target rhs,
-                         void (*bitwise_op)(u8, u8, u8 *, u8 *)) {
-    u8 lhs_val = _cpu_get(cpu, lhs);
-    u8 rhs_val = _cpu_get(cpu, rhs);
+void cpu_run_bitwise_op(Cpu *cpu, Target lhs, Target rhs,
+                        void (*bitwise_op)(u8, u8, u8 *, u8 *)) {
+    u8 lhs_val = cpu_get(cpu, lhs);
+    u8 rhs_val = cpu_get(cpu, rhs);
     bitwise_op(lhs_val, rhs_val, &lhs_val, &cpu->f);
-    _cpu_set(cpu, lhs, lhs_val);
+    cpu_set(cpu, lhs, lhs_val);
 }
 
 void bit_rlc(u8 *value, u8 *flags) {
@@ -256,14 +256,14 @@ void bit_swap(u8 *value, u8 *flags) {
     *flags = chk_z(*value);
 }
 
-void _cpu_run_bitshift_op(Cpu *cpu, Target target,
-                          void (*bitshift_op)(u8 *, u8 *)) {
-    u8 value = _cpu_get(cpu, target);
+void cpu_run_bitshift_op(Cpu *cpu, Target target,
+                         void (*bitshift_op)(u8 *, u8 *)) {
+    u8 value = cpu_get(cpu, target);
     bitshift_op(&value, &cpu->f);
-    _cpu_set(cpu, target, value);
+    cpu_set(cpu, target, value);
 }
 
-void _cpu_run_prefix_op(Cpu *cpu, Target target) {
+void cpu_run_prefix_op(Cpu *cpu, Target target) {
     u8 bitmask = 1 << ((cpu->opcode >> 3) & 7);
 
     switch (cpu->opcode >> 6) {
@@ -271,21 +271,21 @@ void _cpu_run_prefix_op(Cpu *cpu, Target target) {
             // Bit-shift ops
             switch (cpu->opcode >> 3) {
                 case 0:
-                    return _cpu_run_bitshift_op(cpu, target, bit_rlc);
+                    return cpu_run_bitshift_op(cpu, target, bit_rlc);
                 case 1:
-                    return _cpu_run_bitshift_op(cpu, target, bit_rrc);
+                    return cpu_run_bitshift_op(cpu, target, bit_rrc);
                 case 2:
-                    return _cpu_run_bitshift_op(cpu, target, bit_rl);
+                    return cpu_run_bitshift_op(cpu, target, bit_rl);
                 case 3:
-                    return _cpu_run_bitshift_op(cpu, target, bit_rr);
+                    return cpu_run_bitshift_op(cpu, target, bit_rr);
                 case 4:
-                    return _cpu_run_bitshift_op(cpu, target, bit_sla);
+                    return cpu_run_bitshift_op(cpu, target, bit_sla);
                 case 5:
-                    return _cpu_run_bitshift_op(cpu, target, bit_sra);
+                    return cpu_run_bitshift_op(cpu, target, bit_sra);
                 case 6:
-                    return _cpu_run_bitshift_op(cpu, target, bit_swap);
+                    return cpu_run_bitshift_op(cpu, target, bit_swap);
                 case 7:
-                    return _cpu_run_bitshift_op(cpu, target, bit_srl);
+                    return cpu_run_bitshift_op(cpu, target, bit_srl);
                 default:
                     // unreachable
                     assert(false);
@@ -293,18 +293,18 @@ void _cpu_run_prefix_op(Cpu *cpu, Target target) {
             }
         case 1: {
             // Check bit
-            bool is_zero = (_cpu_get(cpu, target) & bitmask) == 0;
+            bool is_zero = (cpu_get(cpu, target) & bitmask) == 0;
             cpu->f = (is_zero ? FZ : 0) | FH | (cpu->f & FC);
             return;
         }
         case 2: {
             // Reset bit
-            _cpu_set(cpu, target, _cpu_get(cpu, target) & (~bitmask));
+            cpu_set(cpu, target, cpu_get(cpu, target) & (~bitmask));
             return;
         }
         case 3: {
             // Set bit
-            _cpu_set(cpu, target, _cpu_get(cpu, target) | bitmask);
+            cpu_set(cpu, target, cpu_get(cpu, target) | bitmask);
             return;
         }
         default:
@@ -458,33 +458,31 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case UOP_NONE:
             break;
         case LD_R8_R8:
-            _cpu_set(cpu, uinst->lhs, _cpu_get(cpu, uinst->rhs));
+            cpu_set(cpu, uinst->lhs, cpu_get(cpu, uinst->rhs));
             break;
         case INC16: {
             u16 x =
-                to_u16(_cpu_get(cpu, uinst->lhs), _cpu_get(cpu, uinst->rhs)) +
-                1;
+                to_u16(cpu_get(cpu, uinst->lhs), cpu_get(cpu, uinst->rhs)) + 1;
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
-            _cpu_set(cpu, uinst->lhs, high_byte(x));
-            _cpu_set(cpu, uinst->rhs, low_byte(x));
+            cpu_set(cpu, uinst->lhs, high_byte(x));
+            cpu_set(cpu, uinst->rhs, low_byte(x));
             break;
         }
         case DEC16: {
             u16 x =
-                to_u16(_cpu_get(cpu, uinst->lhs), _cpu_get(cpu, uinst->rhs)) -
-                1;
+                to_u16(cpu_get(cpu, uinst->lhs), cpu_get(cpu, uinst->rhs)) - 1;
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
-            _cpu_set(cpu, uinst->lhs, high_byte(x));
-            _cpu_set(cpu, uinst->rhs, low_byte(x));
+            cpu_set(cpu, uinst->lhs, high_byte(x));
+            cpu_set(cpu, uinst->rhs, low_byte(x));
             break;
         }
         case ADD16_LO: {
             // Preserve state of zero flag
             u8 orig_z = cpu->f & FZ;
             // Add
-            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, false);
+            cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, false);
             cpu->f = orig_z | (cpu->f & ~FZ);
             break;
         }
@@ -492,47 +490,47 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             // Preserve state of zero flag
             u8 orig_z = cpu->f & FZ;
             // Add with carry
-            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, true);
+            cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, true);
             cpu->f = orig_z | (cpu->f & ~FZ);
             break;
         }
         case ADD16_SP_I8:
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
-            alu_u16_plus_i8(cpu->sp, _cpu_get(cpu, uinst->lhs), &cpu->sp,
+            alu_u16_plus_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &cpu->sp,
                             &cpu->f);
             break;
         case ADD16_HL_SP_PLUS_I8:
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
             u16 hl;
-            alu_u16_plus_i8(cpu->sp, _cpu_get(cpu, uinst->lhs), &hl, &cpu->f);
+            alu_u16_plus_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &hl, &cpu->f);
             split_u16(hl, &cpu->h, &cpu->l);
             break;
         case INC: {
-            u8 lhs_val = _cpu_get(cpu, uinst->lhs);
+            u8 lhs_val = cpu_get(cpu, uinst->lhs);
             alu_inc(lhs_val, &lhs_val, &cpu->f);
-            _cpu_set(cpu, uinst->lhs, lhs_val);
+            cpu_set(cpu, uinst->lhs, lhs_val);
         } break;
         case DEC: {
-            u8 lhs_val = _cpu_get(cpu, uinst->lhs);
+            u8 lhs_val = cpu_get(cpu, uinst->lhs);
             alu_dec(lhs_val, &lhs_val, &cpu->f);
-            _cpu_set(cpu, uinst->lhs, lhs_val);
+            cpu_set(cpu, uinst->lhs, lhs_val);
         } break;
         case ADD:
-            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, false);
+            cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, false);
             break;
         case ADC:
-            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, true);
+            cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, true);
             break;
         case SUB:
-            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, false);
+            cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, false);
             break;
         case SBC:
-            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, true);
+            cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, true);
             break;
         case XOR: {
-            _cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_xor);
+            cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_xor);
         } break;
         case HALT:
             cpu->halted = true;
@@ -552,19 +550,19 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->pc = cpu->opcode & 0x38;
             break;
         case RLCA:
-            _cpu_run_bitshift_op(cpu, A, bit_rlc);
+            cpu_run_bitshift_op(cpu, A, bit_rlc);
             break;
         case RRCA:
-            _cpu_run_bitshift_op(cpu, A, bit_rrc);
+            cpu_run_bitshift_op(cpu, A, bit_rrc);
             break;
         case RLA:
-            _cpu_run_bitshift_op(cpu, A, bit_rl);
+            cpu_run_bitshift_op(cpu, A, bit_rl);
             break;
         case RRA:
-            _cpu_run_bitshift_op(cpu, A, bit_rr);
+            cpu_run_bitshift_op(cpu, A, bit_rr);
             break;
         case PREFIX_OP:
-            _cpu_run_prefix_op(cpu, uinst->lhs);
+            cpu_run_prefix_op(cpu, uinst->lhs);
             break;
         case DAA: {
             daa(&cpu->a, &cpu->f);
