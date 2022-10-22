@@ -23,10 +23,12 @@ void test_cart(void) {
     const char *filename = "roms/01-special.gb";
 
     RomLoadErr err;
-    const CartRom *cart defer(cart_dealloc) =
-        cart_alloc_from_file(filename, &err);
-
+    GameBoy *gb defer(gb_dealloc) = gb_alloc_with_cart(filename, &err);
+    if (err) panicf("Error loading cart: %s", filename);
     ASSERT_EQ_U8(err, ROM_OK);
+
+    const CartRom *cart = gb->bus.cart;
+    ASSERT(cart);
     ASSERT(cart_is_valid_header(cart));
 
     // Peek some arbitrary memory location
