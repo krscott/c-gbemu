@@ -143,7 +143,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
 
         # LD m8,A
         if op & 0xF == 2:
-            i = op & 3
+            i = (op >> 4) & 3
             io = M8_WRITE_TARGETS[i]
             return (
                 f"LD {M8_TARGETS_STR[i]},A",
@@ -181,7 +181,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
 
         # LD A,m8
         if op & 0xF == 0xA:
-            i = op & 3
+            i = (op >> 4) & 3
             io = M8_READ_TARGETS[i]
             return (
                 f"LD A,{M8_TARGETS_STR[i]}",
