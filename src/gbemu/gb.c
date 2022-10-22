@@ -1,10 +1,7 @@
 #include "gb.h"
 
 GameBoy *gb_alloc_with_cart(const char *cart_filename, RomLoadErr *err) {
-    const CartRom *cart = NULL;
     GameBoy *gb = NULL;
-    Ram *work_ram = NULL;
-    Ram *high_ram = NULL;
 
     do {
         gb = malloc(sizeof(GameBoy));
@@ -12,27 +9,24 @@ GameBoy *gb_alloc_with_cart(const char *cart_filename, RomLoadErr *err) {
         cpu_init_post_boot_dmg(&gb->cpu);
         bus_init_booted(&gb->bus);
 
-        cart = cart_alloc_from_file(cart_filename, err);
-        if (!cart) break;
-        gb->bus.cart = cart;
+        gb->bus.cart = cart_alloc_from_file(cart_filename, err);
+        if (!gb->bus.cart) break;
 
-        work_ram = ram_alloc_blank(WORK_RAM_SIZE);
-        if (!work_ram) break;
-        gb->bus.work_ram = work_ram;
+        // TODO: Determine RAM size based on cart header
+        gb->bus.cart_ram = ram_alloc_blank(CART_RAM_BANK_SIZE);
+        if (!gb->bus.cart_ram) break;
 
-        high_ram = ram_alloc_blank(HIGH_RAM_SIZE);
-        if (!high_ram) break;
-        gb->bus.high_ram = high_ram;
+        gb->bus.work_ram = ram_alloc_blank(WORK_RAM_SIZE);
+        if (!gb->bus.work_ram) break;
+
+        gb->bus.high_ram = ram_alloc_blank(HIGH_RAM_SIZE);
+        if (!gb->bus.high_ram) break;
 
         return gb;
     } while (0);
 
     // Error cleanup
-    // Ok to pass NULL to these functions
-    ram_dealloc(&high_ram);
-    ram_dealloc(&work_ram);
     gb_dealloc(&gb);
-    cart_dealloc(&cart);
 
     return NULL;
 }
@@ -42,6 +36,8 @@ void gb_dealloc(GameBoy **gb) {
 
     cart_dealloc(&(*gb)->bus.cart);
     ram_dealloc(&(*gb)->bus.work_ram);
+    ram_dealloc(&(*gb)->bus.high_ram);
+    ram_dealloc(&(*gb)->bus.cart_ram);
 
     free(*gb);
     *gb = NULL;

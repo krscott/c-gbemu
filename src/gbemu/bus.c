@@ -16,11 +16,14 @@ void bus_init_booted(Bus *bus) {
 u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
     assert(bus);
 
+    // 0x0000..=0x3FFF Boot ROM bank 0
     if (address < 0x4000 && !bus->is_bootrom_disabled) {
         assert(bus->boot);
         return rom_read(bus->boot, address);
     }
 
+    // 0x0000..=0x3FFF Cart ROM bank 0
+    // 0x4000..=0x7FFF Cart ROM bank N
     else if (address < 0x8000) {
         if (!bus->cart) {
             if (!debug_peek) {
@@ -41,8 +44,18 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xA000..=0xBFFF External RAM
     else if (address < 0xC000) {
-        if (!debug_peek) panicf("TODO: ExRAM $%04X", address);
-        return 0;
+        if (!bus->work_ram) {
+            if (!debug_peek) {
+                panicf("Attempting to read ExRAM at $%04X but it is NULL",
+                       address);
+            }
+            return 0;
+        }
+
+        u16 internal_address = address - 0xC000;
+        assert(internal_address < CART_RAM_BANK_SIZE);
+
+        return ram_read(bus->work_ram, internal_address);
     }
 
     // 0xC000..=0xCFFF Work RAM
@@ -117,6 +130,8 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     assert(bus);
     // printf("  %04X W $%02X\n", address, value);
 
+    // 0x0000..=0x3FFF Cart ROM bank 0
+    // 0x4000..=0x7FFF Cart ROM bank N
     if (address < 0x8000) {
         panicf("TODO: cart_write $%04X", address);
         return;
@@ -130,7 +145,17 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xA000..=0xBFFF External RAM
     else if (address < 0xC000) {
-        panicf("TODO: ExRAM $%04X", address);
+        if (!bus->work_ram) {
+            panicf("Attempting to write ExRAM at $%04X but it is NULL",
+                   address);
+            return;
+        }
+
+        u16 internal_address = address - 0xC000;
+        assert(internal_address < CART_RAM_BANK_SIZE);
+
+        ram_write(bus->work_ram, internal_address, value);
+
         return;
     }
 
