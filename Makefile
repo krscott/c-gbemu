@@ -11,7 +11,9 @@ BUILD := debug
 cflags.debug := -ggdb -static-libgcc
 cflags.release := -O3
 
-CFLAGS := -Wall -Wextra -Wjump-misses-init -Werror -std=c17 ${cflags.${BUILD}}
+WARNINGS := -Wall -Wextra -Wjump-misses-init -Wswitch-enum
+
+CFLAGS := $(WARNINGS) -Werror -std=c17 ${cflags.${BUILD}}
 LFLAGS := -Iinclude -Isrc -lmingw32 -lSDL2main -lSDL2
 
 # Get all .c files

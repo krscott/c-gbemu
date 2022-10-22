@@ -43,6 +43,9 @@ void cpu_set(Cpu *cpu, Target target, u8 value) {
         case A:
             cpu->a = value;
             break;
+        case F:
+            cpu->f = value;
+            break;
         case B:
             cpu->b = value;
             break;
@@ -96,6 +99,8 @@ u8 cpu_get(Cpu *cpu, Target target) {
             return 0xAA;
         case A:
             return cpu->a;
+        case F:
+            return cpu->f;
         case B:
             return cpu->b;
         case C:
@@ -529,9 +534,18 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case SBC:
             cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, true);
             break;
-        case XOR: {
+        case AND:
+            cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_and);
+            break;
+        case XOR:
             cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_xor);
-        } break;
+            break;
+        case OR:
+            cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_or);
+            break;
+        case CP:
+            cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_cp);
+            break;
         case HALT:
             cpu->halted = true;
             break;
