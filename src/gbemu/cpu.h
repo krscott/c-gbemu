@@ -15,6 +15,7 @@ typedef struct {
     u16 pc;
     u16 sp;
 
+    bool ime;
     bool halted;
     size_t cycle;
 
@@ -31,6 +32,8 @@ u16 cpu_af(Cpu *cpu);
 u16 cpu_bc(Cpu *cpu);
 u16 cpu_de(Cpu *cpu);
 u16 cpu_hl(Cpu *cpu);
+
+void cpu_init(Cpu *cpu);
 
 void cpu_cycle(Cpu *cpu, Bus *bus);
 

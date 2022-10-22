@@ -280,7 +280,7 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
         # Cannot combine with `RET cond` because these have 1 less cycle
         if op in (0xC9, 0xD9):
             return [
-                {},
+                {} if op == 0xC9 else {"uop": "ENABLE_INTERRUPTS"},
                 {"uop": "LD_R8_R8", "lhs": "JP_LO",
                     "rhs": "BUS", "io": "READ_SP_INC"},
                 {"uop": "LD_R8_R8", "lhs": "JP_HI",
@@ -301,6 +301,13 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
                 {"uop": "LD_R8_R8", "lhs": hi, "rhs": "BUS", "io": "READ_SP_INC"},
             ]
 
+        # LD SP,HL
+        if op == 0xF9:
+            return [
+                {"uop": "LD_R8_R8", "lhs": "SP_LO", "rhs": "L"},
+                {"uop": "LD_R8_R8", "lhs": "SP_HI", "rhs": "H"},
+            ]
+
         # JP cond,u16 / JP u16
         if op in (0xC2, 0xC3, 0xCA, 0xD2, 0xDA):
             cond = "COND_ALWAYS" if op == 0xC3 else COND[(op >> 4) & 3]
@@ -313,12 +320,56 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
                 {"uop": "JP"},
             ]
 
+        # LD (FF00+C),A
+        if op == 0xE2:
+            return [
+                {},
+                {"uop": "LD_R8_R8", "lhs": "BUS", "rhs": "A", "io": "WRITE_FF00_C"},
+            ]
+
+        # LD (u16),A
+        if op == 0xEA:
+            return [
+                {},
+                {"uop": "LD_R8_R8", "lhs": "JP_LO",
+                    "rhs": "BUS", "io": "READ_PC_INC"},
+                {"uop": "LD_R8_R8", "lhs": "JP_HI",
+                    "rhs": "BUS", "io": "READ_PC_INC"},
+                {"uop": "LD_R8_R8", "lhs": "BUS", "rhs": "A", "io": "WRITE_JP_INC"},
+            ]
+
+        # LD (FF00+C),A
+        if op == 0xF2:
+            return [
+                {},
+                {"uop": "LD_R8_R8", "lhs": "A", "rhs": "BUS", "io": "READ_FF00_C"},
+            ]
+
+        # LD A,(u16)
+        if op == 0xFA:
+            return [
+                {},
+                {"uop": "LD_R8_R8", "lhs": "JP_LO",
+                    "rhs": "BUS", "io": "READ_PC_INC"},
+                {"uop": "LD_R8_R8", "lhs": "JP_HI",
+                    "rhs": "BUS", "io": "READ_PC_INC"},
+                {"uop": "LD_R8_R8", "lhs": "A", "rhs": "BUS", "io": "READ_JP"},
+            ]
+
         # Prefix CB
         if op == 0xCB:
             return [
                 {},
                 {"uop": "PREFIX_OP", "io": "READ_PC_INC"}
             ]
+
+        # DI
+        if op == 0xF3:
+            return [{"uop": "DISABLE_INTERRUPTS"}]
+
+        # EI
+        if op == 0xFB:
+            return [{"uop": "ENABLE_INTERRUPTS"}]
 
         # CALL cond,u16 / CALL u16
         if op in (0xC4, 0xCC, 0xCD, 0xD4, 0xDC):

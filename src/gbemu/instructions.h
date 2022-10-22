@@ -14,6 +14,7 @@ typedef enum {
     READ_HL_DEC,
     READ_SP_INC,
     READ_JP,
+    READ_FF00_C,
     WRITE_BC,
     WRITE_DE,
     WRITE_HL,
@@ -21,6 +22,7 @@ typedef enum {
     WRITE_HL_DEC,
     WRITE_SP_DEC,
     WRITE_JP_INC,
+    WRITE_FF00_C,
 } BusIo;
 
 typedef enum {
@@ -76,6 +78,8 @@ typedef enum {
     CPL,
     SCF,
     CCF,
+    DISABLE_INTERRUPTS,
+    ENABLE_INTERRUPTS
 } MicroOperation;
 
 typedef enum {

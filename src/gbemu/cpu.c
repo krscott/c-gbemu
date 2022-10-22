@@ -337,6 +337,30 @@ void daa(u8 *value, u8 *flags) {
     *flags = (*flags & (FC | FN)) | chk_z(*value);
 }
 
+void cpu_init(Cpu *cpu) {
+    cpu->a = 0;
+    cpu->f = 0;
+    cpu->b = 0;
+    cpu->c = 0;
+    cpu->d = 0;
+    cpu->e = 0;
+    cpu->h = 0;
+    cpu->l = 0;
+    cpu->pc = 0;
+    cpu->sp = 0;
+
+    cpu->ime = true;
+    cpu->halted = false;
+    cpu->cycle = 0;
+
+    cpu->bus_reg = 0;
+    cpu->jp_lo = 0;
+    cpu->jp_hi = 0;
+
+    cpu->opcode = 0;
+    cpu->ucode_step = 0;
+}
+
 void cpu_cycle(Cpu *cpu, Bus *bus) {
     assert(cpu);
     if (cpu->halted) return;
@@ -373,6 +397,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case WRITE_HL_DEC:
         case WRITE_SP_DEC:
         case WRITE_JP_INC:
+        case WRITE_FF00_C:
             break;
         case READ_PC_INC:
             cpu->bus_reg = bus_read(bus, cpu->pc++);
@@ -397,6 +422,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         case READ_JP:
             cpu->bus_reg = bus_read(bus, cpu_jp_reg(cpu));
+            break;
+        case READ_FF00_C:
+            cpu->bus_reg = bus_read(bus, 0xFF00 + cpu->c);
             break;
         default:
             panicf("Unhandled input case: %d", uinst->io);
@@ -532,6 +560,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->f &= ~(FN | FH);
             cpu->f ^= FC;
             break;
+        case DISABLE_INTERRUPTS:
+
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
     }
@@ -548,6 +578,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case READ_HL_DEC:
         case READ_SP_INC:
         case READ_JP:
+        case READ_FF00_C:
             break;
         case WRITE_BC:
             bus_write(bus, cpu_bc(cpu), cpu->bus_reg);
@@ -569,6 +600,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         case WRITE_JP_INC:
             bus_write(bus, cpu_jp_reg_postinc(cpu), cpu->bus_reg);
+            break;
+        case WRITE_FF00_C:
+            bus_write(bus, 0xFF00 + cpu->c, cpu->bus_reg);
             break;
         default:
             panicf("Unhandled output case: %d", uinst->io);
