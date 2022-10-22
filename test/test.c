@@ -1,9 +1,5 @@
 
-#include "../src/gbemu/bus.h"
-#include "../src/gbemu/cart.h"
-#include "../src/gbemu/cpu.h"
-#include "../src/gbemu/instructions.h"
-#include "../src/gbemu/rom.h"
+#include "../src/gbemu/gb.h"
 
 // Make sure NDEBUG was not set during build step to ensure all asserts are
 // enabled.

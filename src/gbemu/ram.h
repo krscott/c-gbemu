@@ -3,7 +3,7 @@
 #include "common.h"
 
 /// @brief Dynamically-sized container of read/write memory
-typedef struct {
+typedef struct Ram {
     size_t size;
     u8 data[];
 } Ram;

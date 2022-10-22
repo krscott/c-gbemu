@@ -3,6 +3,15 @@
 #include "cart.h"
 #include "rom.h"
 
+void bus_init_booted(Bus *bus) {
+    assert(bus);
+
+    bus->boot = NULL;
+    bus->cart = NULL;
+    bus->work_ram = NULL;
+    bus->is_bootrom_disabled = true;
+}
+
 u8 _bus_read(const Bus *bus, u16 address) {
     assert(bus);
 

@@ -583,7 +583,11 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->f ^= FC;
             break;
         case DISABLE_INTERRUPTS:
-
+            cpu->ime = false;
+            break;
+        case ENABLE_INTERRUPTS:
+            cpu->ime = true;
+            break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
     }

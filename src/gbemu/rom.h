@@ -9,7 +9,7 @@ typedef enum {
 } RomLoadErr;
 
 /// @brief Dynamically-sized container of read-only memory
-typedef struct {
+typedef struct Rom {
     size_t size;
     u8 data[];
 } Rom;

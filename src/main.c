@@ -61,20 +61,12 @@ int main(int argc, char *args[]) {
     }
 
     RomLoadErr err;
-    const CartRom *cart defer(cart_dealloc) =
-        cart_alloc_from_file(filename, &err);
+    GameBoy *gb defer(gb_dealloc) = gb_alloc_with_cart(filename, &err);
     if (err) panicf("Error loading cart: %s", filename);
 
-    print_cart_info(cart, filename);
+    cart_print_info(gb->bus.cart, filename);
 
-    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
-    Bus bus = {.is_bootrom_disabled = true, .cart = cart, .work_ram = work_ram};
-    Cpu cpu;
-    cpu_init_post_boot_dmg(&cpu);
-
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    gb_run_until_halt(gb);
 
     // window();
 

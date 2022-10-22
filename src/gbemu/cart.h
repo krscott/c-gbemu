@@ -23,7 +23,7 @@ typedef struct {
 static_assert(sizeof(CartHeaderView) == 0x50);
 
 /// @brief Byte-compatible wrapper of Rom struct.
-typedef struct {
+typedef struct CartRom {
     Rom rom;
 } CartRom;
 
@@ -59,4 +59,4 @@ u8 cart_read(const CartRom *cart, u16 address);
 /// @brief Print cart info.
 /// @param cart The cart ROM data. Must not be null.
 /// @param filename Optional. If NULL, filename will not be printed
-void print_cart_info(const CartRom *cart, const char *filename);
+void cart_print_info(const CartRom *cart, const char *filename);

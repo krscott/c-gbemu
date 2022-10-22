@@ -7,13 +7,15 @@
 
 #define WORK_RAM_SIZE 0x2000
 
-typedef struct {
+typedef struct Bus {
     const Rom *boot;
     const CartRom *cart;
     Ram *work_ram;
 
     bool is_bootrom_disabled;
 } Bus;
+
+void bus_init_booted(Bus *bus);
 
 /// @brief Read data from the bus
 /// @param bus Must not be NULL

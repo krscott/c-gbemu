@@ -3,7 +3,7 @@
 #include "bus.h"
 #include "common.h"
 
-typedef struct {
+typedef struct Cpu {
     u8 a;
     u8 f;
     u8 b;

@@ -215,7 +215,7 @@ const char *cart_licensee_name(const CartHeaderView *header) {
     return LICENSEE_CODE[code];
 }
 
-void print_cart_info(const CartRom *cart, const char *filename) {
+void cart_print_info(const CartRom *cart, const char *filename) {
     const CartHeaderView *header = cart_header(cart);
     assert(header);
 
