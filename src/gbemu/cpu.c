@@ -276,21 +276,29 @@ void cpu_run_prefix_op(Cpu *cpu, Target target) {
             // Bit-shift ops
             switch (cpu->opcode >> 3) {
                 case 0:
-                    return cpu_run_bitshift_op(cpu, target, bit_rlc);
+                    cpu_run_bitshift_op(cpu, target, bit_rlc);
+                    return;
                 case 1:
-                    return cpu_run_bitshift_op(cpu, target, bit_rrc);
+                    cpu_run_bitshift_op(cpu, target, bit_rrc);
+                    return;
                 case 2:
-                    return cpu_run_bitshift_op(cpu, target, bit_rl);
+                    cpu_run_bitshift_op(cpu, target, bit_rl);
+                    return;
                 case 3:
-                    return cpu_run_bitshift_op(cpu, target, bit_rr);
+                    cpu_run_bitshift_op(cpu, target, bit_rr);
+                    return;
                 case 4:
-                    return cpu_run_bitshift_op(cpu, target, bit_sla);
+                    cpu_run_bitshift_op(cpu, target, bit_sla);
+                    return;
                 case 5:
-                    return cpu_run_bitshift_op(cpu, target, bit_sra);
+                    cpu_run_bitshift_op(cpu, target, bit_sra);
+                    return;
                 case 6:
-                    return cpu_run_bitshift_op(cpu, target, bit_swap);
+                    cpu_run_bitshift_op(cpu, target, bit_swap);
+                    return;
                 case 7:
-                    return cpu_run_bitshift_op(cpu, target, bit_srl);
+                    cpu_run_bitshift_op(cpu, target, bit_srl);
+                    return;
                 default:
                     // unreachable
                     assert(false);
@@ -505,13 +513,14 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             alu_u16_plus_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &cpu->sp,
                             &cpu->f);
             break;
-        case ADD16_HL_SP_PLUS_I8:
+        case ADD16_HL_SP_PLUS_I8: {
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
             u16 hl;
             alu_u16_plus_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &hl, &cpu->f);
             split_u16(hl, &cpu->h, &cpu->l);
             break;
+        }
         case INC: {
             u8 lhs_val = cpu_get(cpu, uinst->lhs);
             alu_inc(lhs_val, &lhs_val, &cpu->f);

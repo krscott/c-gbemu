@@ -66,6 +66,10 @@ int main(int argc, char *args[]) {
 
     cart_print_info(gb->bus.cart, filename);
 
+    if (!cart_is_valid_header(gb->bus.cart)) {
+        error("ROM header is invalid");
+    }
+
     gb_run_until_halt(gb);
 
     // window();

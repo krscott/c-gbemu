@@ -11,7 +11,7 @@ BUILD := debug
 cflags.debug := -ggdb -static-libgcc
 cflags.release := -O3
 
-WARNINGS := -Wall -Wextra -Wjump-misses-init -Wswitch-enum
+WARNINGS := -Wall -Wextra -Wjump-misses-init -Wswitch-enum -Wpedantic
 
 CFLAGS := $(WARNINGS) -Werror -std=c17 ${cflags.${BUILD}}
 LFLAGS := -Iinclude -Isrc -lmingw32 -lSDL2main -lSDL2

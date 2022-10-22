@@ -23,9 +23,7 @@ typedef struct {
 static_assert(sizeof(CartHeaderView) == 0x50);
 
 /// @brief Byte-compatible wrapper of Rom struct.
-typedef struct CartRom {
-    Rom rom;
-} CartRom;
+typedef Rom CartRom;
 
 /// @brief Get a view of the cart's header data.
 /// @param cart Must not be NULL.

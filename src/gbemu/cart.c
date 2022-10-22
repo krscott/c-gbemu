@@ -248,22 +248,22 @@ void cart_dealloc(const CartRom **cart) {
 
 const CartHeaderView *cart_header(const CartRom *cart) {
     assert(cart);
-    if (cart->rom.size == 0) {
+    if (cart->size == 0) {
         return NULL;
     }
-    assert(cart->rom.size >= MIN_CART_SIZE);
-    return (CartHeaderView *)&cart->rom.data[HEADER_ADDR];
+    assert(cart->size >= MIN_CART_SIZE);
+    return (CartHeaderView *)&cart->data[HEADER_ADDR];
 }
 
 bool cart_is_valid_header(const CartRom *cart) {
     assert(cart);
-    if (!cart->rom.size) {
+    if (!cart->size) {
         return false;
     }
 
     u16 chk = 0;
     for (u16 addr = 0x0134; addr <= 0x014C; ++addr) {
-        chk = chk - cart->rom.data[addr] - 1;
+        chk = chk - cart->data[addr] - 1;
     }
     const CartHeaderView *header = cart_header(cart);
 
@@ -273,9 +273,9 @@ bool cart_is_valid_header(const CartRom *cart) {
 u8 cart_read(const CartRom *cart, u16 address) {
     assert(cart);
 
-    if (address >= cart->rom.size) {
+    if (address >= cart->size) {
         return 0;
     }
 
-    return cart->rom.data[address];
+    return cart->data[address];
 }
