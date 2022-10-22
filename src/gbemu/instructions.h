@@ -4,7 +4,7 @@
 
 #define MICRO_INSTRUCTION_SIZE 6
 
-typedef enum {
+typedef enum BusIo {
     IO_NONE = 0,
     READ_PC_INC,
     READ_BC,
@@ -25,7 +25,7 @@ typedef enum {
     WRITE_FF00_C,
 } BusIo;
 
-typedef enum {
+typedef enum Target {
     TARGET_NONE = 0,
     A,
     F,
@@ -45,7 +45,7 @@ typedef enum {
     IM_FF,
 } Target;
 
-typedef enum {
+typedef enum MicroOperation {
     UOP_NONE = 0,
     LD_R8_R8,
     INC16,
@@ -82,7 +82,7 @@ typedef enum {
     ENABLE_INTERRUPTS
 } MicroOperation;
 
-typedef enum {
+typedef enum Condition {
     COND_ALWAYS = 0,
     COND_NZ,
     COND_Z,
@@ -90,7 +90,7 @@ typedef enum {
     COND_C,
 } Condition;
 
-typedef struct {
+typedef struct MicroInstr {
     BusIo io;
     Target lhs;
     Target rhs;
@@ -100,8 +100,13 @@ typedef struct {
     bool undefined;
 } MicroInstr;
 
-typedef MicroInstr Instruction[MICRO_INSTRUCTION_SIZE];
+typedef struct Instruction {
+    const char* mnemonic;
+    MicroInstr micro_instructions[MICRO_INSTRUCTION_SIZE];
+} Instruction;
 
-const MicroInstr *instructions_get_uinst(u8 opcode, u8 ustep);
+const MicroInstr* instructions_get_uinst(u8 opcode, u8 ustep);
 
 bool instructions_is_last_ustep(u8 opcode, u8 ustep);
+
+const char* instructions_get_mnemonic(u8 opcode);

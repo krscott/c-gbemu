@@ -41,6 +41,7 @@ void gb_dealloc(GameBoy **gb) {
 void gb_run_until_halt(GameBoy *gb) {
     gb->cpu.halted = false;
     while (!gb->cpu.halted) {
+        cpu_print_trace(&gb->cpu, &gb->bus);
         cpu_cycle(&gb->cpu, &gb->bus);
     }
 }

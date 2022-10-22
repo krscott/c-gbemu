@@ -23,6 +23,8 @@ void bus_init_booted(Bus *bus);
 /// @return
 u8 bus_read(const Bus *bus, u16 address);
 
+u8 bus_debug_peek(const Bus *bus, u16 address);
+
 /// @brief Write data to the bus
 /// @param bus Must not be NULL
 /// @param address

@@ -38,4 +38,5 @@ void cpu_init_post_boot_dmg(Cpu *cpu);
 
 void cpu_cycle(Cpu *cpu, Bus *bus);
 
+void cpu_print_trace(Cpu *cpu, Bus *bus);
 void cpu_print_info(Cpu *cpu);
