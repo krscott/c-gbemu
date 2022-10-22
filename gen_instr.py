@@ -112,7 +112,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
 
         # JR cond,i8
         if op in (0x20, 0x28, 0x30, 0x38):
-            i = (op >> 4) & 3
+            i = (op >> 3) & 3
             cond = COND[i]
 
             return (
@@ -311,7 +311,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
     if op >= 0xC0 and op <= 0xFF:
         # RET cond
         if op in (0xC0, 0xC8, 0xD0, 0xD8):
-            i = (op >> 4) & 3
+            i = (op >> 3) & 3
             cond = COND[i]
             return (
                 f"RET {COND_STR[i]}",

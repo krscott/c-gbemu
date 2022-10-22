@@ -561,7 +561,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case JP_REL:
             // Extend sign bit to jp_hi
             cpu->jp_hi = cpu->jp_lo & 0x80 ? 0xFF : 0;
-            cpu->pc = cpu_jp_reg(cpu);
+            cpu->pc += cpu_jp_reg(cpu);
             break;
         case JP:
             cpu->pc = cpu_jp_reg(cpu);
@@ -587,10 +587,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case PREFIX_OP:
             cpu_run_prefix_op(cpu, uinst->lhs);
             break;
-        case DAA: {
+        case DAA:
             daa(&cpu->a, &cpu->f);
             break;
-        }
         case CPL:
             cpu->a ^= 0xFF;
             cpu->f |= FN | FH;
