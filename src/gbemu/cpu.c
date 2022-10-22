@@ -7,23 +7,29 @@
 #define FH 0x20
 #define FC 0x10
 
+u8 low_byte(u16 word) { return (u8)(word & 0xFF); }
+u8 high_byte(u16 word) { return (u8)(word >> 8); }
 u16 to_u16(u8 hi, u8 lo) { return (((u16)hi) << 8) | ((u16)lo); }
+void split_u16(u16 value, u8 *hi, u8 *lo) {
+    *hi = high_byte(value);
+    *lo = low_byte(value);
+}
+
 u16 cpu_af(Cpu *cpu) { return to_u16(cpu->a, cpu->f); }
 u16 cpu_bc(Cpu *cpu) { return to_u16(cpu->b, cpu->c); }
 u16 cpu_de(Cpu *cpu) { return to_u16(cpu->d, cpu->e); }
 u16 cpu_hl(Cpu *cpu) { return to_u16(cpu->h, cpu->l); }
-
-u16 _cpu_tmp16(Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
-
-void _cpu_inc_counters(Cpu *cpu) {
-    if (instructions_is_last_ustep(cpu->opcode, cpu->ucode_step)) {
-        cpu->ucode_step = 0;
-    } else {
-        ++cpu->ucode_step;
-    }
-
-    ++cpu->cycle;
+u16 cpu_hl_postinc(Cpu *cpu) {
+    u16 x = to_u16(cpu->h, cpu->l);
+    split_u16(x + 1, &cpu->h, &cpu->l);
+    return x;
 }
+u16 cpu_hl_postdec(Cpu *cpu) {
+    u16 x = to_u16(cpu->h, cpu->l);
+    split_u16(x - 1, &cpu->h, &cpu->l);
+    return x;
+}
+u16 cpu_jp_reg(Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
 
 void _cpu_set(Cpu *cpu, Target target, u8 value) {
     switch (target) {
@@ -52,6 +58,18 @@ void _cpu_set(Cpu *cpu, Target target, u8 value) {
             break;
         case BUS:
             cpu->bus_reg = value;
+            break;
+        case SP_LO:
+            cpu->sp = to_u16(high_byte(cpu->sp), value);
+            break;
+        case SP_HI:
+            cpu->sp = to_u16(value, low_byte(cpu->sp));
+            break;
+        case PC_LO:
+            cpu->pc = to_u16(high_byte(cpu->pc), value);
+            break;
+        case PC_HI:
+            cpu->pc = to_u16(value, low_byte(cpu->pc));
             break;
         case JP_LO:
             cpu->jp_lo = value;
@@ -84,6 +102,14 @@ u8 _cpu_get(Cpu *cpu, Target target) {
             return cpu->l;
         case BUS:
             return cpu->bus_reg;
+        case SP_LO:
+            return low_byte(cpu->sp);
+        case SP_HI:
+            return high_byte(cpu->sp);
+        case PC_LO:
+            return low_byte(cpu->pc);
+        case PC_HI:
+            return high_byte(cpu->pc);
         case JP_LO:
             return cpu->jp_lo;
         case JP_HI:
@@ -169,10 +195,34 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 
     switch (uinst->io) {
         case IO_NONE:
+        case WRITE_BC:
+        case WRITE_DE:
         case WRITE_HL:
+        case WRITE_HL_INC:
+        case WRITE_HL_DEC:
+        case WRITE_SP_DEC:
+        case WRITE_JP_INC:
             break;
         case READ_PC_INC:
             cpu->bus_reg = bus_read(bus, cpu->pc++);
+            break;
+        case READ_BC:
+            cpu->bus_reg = bus_read(bus, cpu_bc(cpu));
+            break;
+        case READ_DE:
+            cpu->bus_reg = bus_read(bus, cpu_de(cpu));
+            break;
+        case READ_HL:
+            cpu->bus_reg = bus_read(bus, cpu_hl(cpu));
+            break;
+        case READ_HL_INC:
+            cpu->bus_reg = bus_read(bus, cpu_hl_postinc(cpu));
+            break;
+        case READ_HL_DEC:
+            cpu->bus_reg = bus_read(bus, cpu_hl_postdec(cpu));
+            break;
+        case READ_SP_INC:
+            cpu->bus_reg = bus_read(bus, cpu->sp++);
             break;
         default:
             panicf("Unhandled input case: %d", uinst->io);
@@ -183,12 +233,45 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     switch (uinst->uop) {
         case UOP_NONE:
             break;
-        case LD16_PC_TMP:
-            cpu->pc = _cpu_tmp16(cpu);
-            break;
         case LD_R8_R8:
             _cpu_set(cpu, uinst->lhs, _cpu_get(cpu, uinst->rhs));
             break;
+        case INC16: {
+            u16 x =
+                to_u16(_cpu_get(cpu, uinst->lhs), _cpu_get(cpu, uinst->rhs)) +
+                1;
+            // Two register sets in the same cycle is probably not technically
+            // accurate, but it shouldn't make a difference
+            _cpu_set(cpu, uinst->lhs, high_byte(x));
+            _cpu_set(cpu, uinst->rhs, low_byte(x));
+            break;
+        }
+        case DEC16: {
+            u16 x =
+                to_u16(_cpu_get(cpu, uinst->lhs), _cpu_get(cpu, uinst->rhs)) -
+                1;
+            // Two register sets in the same cycle is probably not technically
+            // accurate, but it shouldn't make a difference
+            _cpu_set(cpu, uinst->lhs, high_byte(x));
+            _cpu_set(cpu, uinst->rhs, low_byte(x));
+            break;
+        }
+        case ADD16_LO: {
+            // Preserve state of zero flag
+            u8 orig_z = cpu->f & FZ;
+            // Add
+            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, false);
+            cpu->f = orig_z | (cpu->f & ~FZ);
+            break;
+        }
+        case ADD16_HI: {
+            // Preserve state of zero flag
+            u8 orig_z = cpu->f & FZ;
+            // Add with carry
+            _cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, true);
+            cpu->f = orig_z | (cpu->f & ~FZ);
+            break;
+        }
         case INC: {
             u8 lhs_val = _cpu_get(cpu, uinst->lhs);
             alu_inc(lhs_val, &lhs_val, &cpu->f);
@@ -220,8 +303,19 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case HALT:
             cpu->halted = true;
             break;
+        case JP_REL:
+            // Extend sign bit to jp_hi
+            cpu->jp_hi = cpu->jp_lo & 0x80 ? 0xFF : 0;
+            cpu->pc = cpu_jp_reg(cpu);
+            break;
         case JP:
-            cpu->pc = to_u16(cpu->jp_hi, cpu->jp_lo);
+            cpu->pc = cpu_jp_reg(cpu);
+            break;
+        case JP_HL:
+            cpu->pc = cpu_hl(cpu);
+            break;
+        case RST:
+            cpu->pc = cpu->opcode & 0x38;
             break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);
@@ -232,17 +326,65 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     switch (uinst->io) {
         case IO_NONE:
         case READ_PC_INC:
+        case READ_BC:
+        case READ_DE:
+        case READ_HL:
+        case READ_HL_INC:
+        case READ_HL_DEC:
+        case READ_SP_INC:
+            break;
+        case WRITE_BC:
+            bus_write(bus, cpu_bc(cpu), cpu->bus_reg);
+            break;
+        case WRITE_DE:
+            bus_write(bus, cpu_de(cpu), cpu->bus_reg);
             break;
         case WRITE_HL:
             bus_write(bus, cpu_hl(cpu), cpu->bus_reg);
             break;
+        case WRITE_HL_INC:
+            bus_write(bus, cpu_hl_postinc(cpu), cpu->bus_reg);
+            break;
+        case WRITE_HL_DEC:
+            bus_write(bus, cpu_hl_postdec(cpu), cpu->bus_reg);
+            break;
+        case WRITE_SP_DEC:
+            bus_write(bus, --cpu->sp, cpu->bus_reg);
+            break;
+        case WRITE_JP_INC:
+
         default:
             panicf("Unhandled output case: %d", uinst->io);
     }
 
-    // Section 4 - Counters/Cleanup
+    // Section 4 - Counters/Conditions
 
-    _cpu_inc_counters(cpu);
+    if (instructions_is_last_ustep(cpu->opcode, cpu->ucode_step)) {
+        cpu->ucode_step = 0;
+    } else {
+        ++cpu->ucode_step;
+    }
+
+    switch (uinst->cond) {
+        case COND_ALWAYS:
+            break;
+        case COND_NZ:
+            if ((cpu->f & FZ) != 0) cpu->ucode_step = 0;
+            break;
+        case COND_Z:
+            if ((cpu->f & FZ) == 0) cpu->ucode_step = 0;
+            break;
+        case COND_NC:
+            if ((cpu->f & FC) != 0) cpu->ucode_step = 0;
+            break;
+        case COND_C:
+            if ((cpu->f & FC) == 0) cpu->ucode_step = 0;
+            break;
+        default:
+            panicf("Unhandled condition case: %d", uinst->cond);
+    }
+
+    ++cpu->cycle;
 }
 
 void cpu_print_info(Cpu *cpu) {

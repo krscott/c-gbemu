@@ -113,8 +113,8 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
             [lhs, rhs] = R16_TARGETS[(op >> 4) & 3]
 
             return [
-                {"uop": "INC16_LO", "lhs": lhs, "rhs": rhs},
-                {"uop": "INC16_HI", "lhs": lhs, "rhs": rhs},
+                {"uop": "INC16", "lhs": lhs, "rhs": rhs},
+                {},
             ]
 
         # ADD r16,r16
@@ -139,8 +139,8 @@ def op_instr(op: int) -> Optional[list[dict[str, Any]]]:
             [lhs, rhs] = R16_TARGETS[(op >> 4) & 3]
 
             return [
-                {"uop": "DEC16_LO", "lhs": lhs, "rhs": rhs},
-                {"uop": "DEC16_HI", "lhs": lhs, "rhs": rhs},
+                {"uop": "DEC16", "lhs": lhs, "rhs": rhs},
+                {},
             ]
 
         # INC/DEC d8

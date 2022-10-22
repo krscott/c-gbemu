@@ -43,12 +43,9 @@ typedef enum {
 
 typedef enum {
     UOP_NONE = 0,
-    LD16_PC_TMP,
     LD_R8_R8,
-    INC16_LO,
-    INC16_HI,
-    DEC16_LO,
-    DEC16_HI,
+    INC16,
+    DEC16,
     ADD16_LO,
     ADD16_HI,
     INC,
