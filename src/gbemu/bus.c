@@ -52,7 +52,7 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
             return 0;
         }
 
-        u16 internal_address = address - 0xC000;
+        u16 internal_address = address - 0xA000;
         assert(internal_address < CART_RAM_BANK_SIZE);
 
         return ram_read(bus->work_ram, internal_address);
@@ -151,7 +151,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
             return;
         }
 
-        u16 internal_address = address - 0xC000;
+        u16 internal_address = address - 0xA000;
         assert(internal_address < CART_RAM_BANK_SIZE);
 
         ram_write(bus->work_ram, internal_address, value);
