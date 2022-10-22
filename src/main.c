@@ -2,7 +2,7 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 
-#include "gbemu/cart.h"
+#include "gbemu/gb.h"
 
 const int SCREEN_WIDTH = 640;
 const int SCREEN_HEIGHT = 480;
@@ -55,12 +55,25 @@ int main(int argc, char *args[]) {
         filename = args[1];
     }
 
-    if (filename) {
-        RomLoadErr err;
-        const CartRom *cart = cart_alloc_from_file(filename, &err);
-        print_cart_info(cart, filename);
+    if (!filename) {
+        printf("Usage: c-gbemu ROMFILE\n");
+        return 1;
+    }
 
-        panic("TODO: Error handling");
+    RomLoadErr err;
+    const CartRom *cart defer(cart_dealloc) =
+        cart_alloc_from_file(filename, &err);
+    if (err) panicf("Error loading cart: %s", filename);
+
+    print_cart_info(cart, filename);
+
+    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
+    Bus bus = {.is_bootrom_disabled = true, .cart = cart, .work_ram = work_ram};
+    Cpu cpu;
+    cpu_init_post_boot_dmg(&cpu);
+
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
     }
 
     // window();
