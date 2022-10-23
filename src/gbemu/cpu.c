@@ -386,7 +386,7 @@ bool cpu_check_jp_interrupt(Cpu *cpu, Bus *bus, u8 mask, u16 address) {
 }
 
 // Same as CALL instruction, but without the initial (PC++) reads.
-MicroInstr interrupt_call_instruction[MICRO_INSTRUCTION_SIZE] = {
+const MicroInstr interrupt_call_instruction[MICRO_INSTRUCTION_SIZE] = {
     {.uop = LD_R8_R8, .lhs = BUS, .rhs = PC_HI, .io = WRITE_SP_DEC},
     {.uop = LD_R8_R8, .lhs = BUS, .rhs = PC_LO, .io = WRITE_SP_DEC},
     {.uop = JP, .end = true},

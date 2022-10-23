@@ -734,11 +734,6 @@ const MicroInstr *instructions_get_uinst(u8 opcode, u8 ustep) {
     return &instructions[opcode].micro_instructions[ustep];
 }
 
-bool instructions_is_last_ustep(u8 opcode, u8 ustep) {
-    if (ustep >= MICRO_INSTRUCTION_SIZE - 1) return true;
-    return instructions[opcode].micro_instructions[ustep].end;
-}
-
 const char* instructions_get_mnemonic(u8 opcode) {
     return instructions[opcode].mnemonic;
 }
