@@ -50,7 +50,8 @@ const char *cart_type_name(const CartHeaderView *header) {
     return "UNKNOWN";
 }
 
-// TODO: Add old codes
+// TODO: Separate old and new codes, since they don't always line up
+// https://gbdev.gg8.se/wiki/articles/Gameboy_ROM_Header_Info#Licensee
 static const char *LICENSEE_CODE[0x100] = {
     [0x00] = "None",
     [0x01] = "Nintendo",
@@ -72,12 +73,12 @@ static const char *LICENSEE_CODE[0x100] = {
     [0x30] = "Infogrames",
     [0x31] = "Nintendo",
     [0x32] = "Bandai",
-    [0x33] = "Indicates that the New licensee code should be used instead.",
+    [0x33] = "Ocean/Acclaim",
     [0x34] = "Konami",
     [0x35] = "HectorSoft",
     [0x38] = "Capcom",
     [0x39] = "Banpresto",
-    [0x3C] = ".Entertainment i",
+    [0x3C] = "*Entertainment i",
     [0x3E] = "Gremlin",
     [0x41] = "Ubisoft",
     [0x42] = "Atlus",
@@ -112,7 +113,7 @@ static const char *LICENSEE_CODE[0x100] = {
     [0x72] = "Broderbund",
     [0x73] = "Sculptered Soft",
     [0x75] = "The Sales Curve",
-    [0x78] = "t.hq",
+    [0x78] = "t*hq",
     [0x79] = "Accolade",
     [0x7A] = "Triffix Entertainment",
     [0x7C] = "Microprose",
@@ -120,15 +121,16 @@ static const char *LICENSEE_CODE[0x100] = {
     [0x80] = "Misawa Entertainment",
     [0x83] = "Lozc",
     [0x86] = "Tokuma Shoten Intermedia",
+    [0x87] = "Tsukuda Ori*",
     [0x8B] = "Bullet-Proof Software",
     [0x8C] = "Vic Tokai",
     [0x8E] = "Ape",
-    [0x8F] = "I’Max",
+    [0x8F] = "I'Max",
     [0x91] = "Chunsoft Co.",
     [0x92] = "Video System",
     [0x93] = "Tsubaraya Productions Co.",
     [0x95] = "Varie Corporation",
-    [0x96] = "Yonezawa/S’Pal",
+    [0x96] = "Yonezawa/S'Pal",
     [0x97] = "Kaneko",
     [0x99] = "Arc",
     [0x9A] = "Nihon Bussan",
@@ -169,7 +171,7 @@ static const char *LICENSEE_CODE[0x100] = {
     [0xCB] = "Vap",
     [0xCC] = "Use Corporation",
     [0xCD] = "Meldac",
-    [0xCE] = ".Pony Canyon or",
+    [0xCE] = "*Pony Canyon or",
     [0xCF] = "Angel",
     [0xD0] = "Taito",
     [0xD1] = "Sofel",
