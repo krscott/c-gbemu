@@ -7,17 +7,17 @@
 #error "NDEBUG must not be set for testing"
 #endif
 
-#define ASSERT(cond)                               \
-    do {                                           \
-        if (!cond) panic("Assert failed: " #cond); \
+#define ASSERT(cond)                                 \
+    do {                                             \
+        if (!(cond)) panic("Assert failed: " #cond); \
     } while (0)
-#define ASSERT_EQ(a, b, fmt)                                                 \
-    do {                                                                     \
-        if (a != b)                                                          \
-            panicf("Assert failed: " #a " (" fmt ") == " #b " (" fmt ")", a, \
-                   b);                                                       \
+#define ASSERT_EQ(a, b, fmt)                                                   \
+    do {                                                                       \
+        if ((a) != (b))                                                        \
+            panicf("Assert failed: " #a " (" fmt ") == " #b " (" fmt ")", (a), \
+                   (b));                                                       \
     } while (0)
-#define ASSERT_EQ_U8(a, b) ASSERT_EQ(a, b, "0x%02X")
+#define ASSERT_EQ_U8(a, b) ASSERT_EQ((a), (b), "0x%02X")
 
 void test_cart(void) {
     const char *filename = "roms/01-special.gb";
@@ -53,7 +53,7 @@ void test_microcode_is_valid(void) {
                        (u8)ustep);
             }
 
-            if (instructions_is_last_ustep(opcode, ustep)) {
+            if (uinst->end) {
                 break;
             }
         }
@@ -254,6 +254,44 @@ void test_cpu_arith(void) {
     ASSERT_EQ_U8(cpu.f, 0x70);
 }
 
+void test_interrupt(void) {
+    const u8 prog[] = {
+        0x3E, 0x02,        // LD A,$02
+        0xE0, 0xFF,        // LD $FFFF,A  ; Enable LCD_STAT
+        0x31, 0xFF, 0xDF,  // LD SP,$DFFF ; Set SP to end of work RAM
+        0xFB,              // EI
+        0x00,              // NOP
+        0x00,              // NOP
+        0x00,              // NOP
+        0x76,              // HALT
+        0x00,              // NOP
+        0x00,              // NOP
+        0x00,              // NOP
+    };
+    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
+    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
+    Bus bus = {.boot = rom, .work_ram = work_ram};
+    Cpu cpu = {0};
+
+    while (!cpu.halted) {
+        cpu_cycle(&cpu, &bus);
+    }
+    ASSERT_EQ_U8(bus.reg_ie, 0x02);
+    ASSERT(cpu.ime);
+
+    cpu.halted = false;
+    // Trigger interrupt
+    bus.reg_if = bus.reg_ie;
+
+    // Interrupt call is 3 cycles, then check that PC is
+    // LCD_STAT -> INT $48
+    cpu_cycle(&cpu, &bus);
+    cpu_cycle(&cpu, &bus);
+    ASSERT(cpu.pc != 0x0048);
+    cpu_cycle(&cpu, &bus);
+    ASSERT_EQ_U8(cpu.pc, 0x0048);
+}
+
 int main(void) {
     test_cart();
     test_microcode_is_valid();
@@ -263,6 +301,7 @@ int main(void) {
     test_cpu_inc_dec();
     test_cpu_hl();
     test_cpu_arith();
+    test_interrupt();
 
     printf("\nAll tests passed!\n");
 }

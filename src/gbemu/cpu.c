@@ -9,6 +9,22 @@
 #define FH 0x20
 #define FC 0x10
 
+typedef enum InterruptMask {
+    INTR_VBLANK_MASK = 0x01,
+    INTR_LCD_STAT_MASK = 0x02,
+    INTR_TIMER_MASK = 0x04,
+    INTR_SERIAL_MASK = 0x08,
+    INTR_JOYPAD_MASK = 0x10,
+} InterruptMask;
+
+typedef enum InterruptAddr {
+    INTR_VBLANK_ADDR = 0x40,
+    INTR_LCD_STAT_ADDR = 0x48,
+    INTR_TIMER_ADDR = 0x50,
+    INTR_SERIAL_ADDR = 0x58,
+    INTR_JOYPAD_ADDR = 0x60,
+} InterruptAddr;
+
 u8 low_byte(u16 word) { return (u8)(word & 0xFF); }
 u8 high_byte(u16 word) { return (u8)(word >> 8); }
 u16 to_u16(u8 hi, u8 lo) { return (((u16)hi) << 8) | ((u16)lo); }
@@ -354,6 +370,28 @@ void daa(u8 *value, u8 *flags) {
     *flags = (*flags & (FC | FN)) | chk_z(*value);
 }
 
+bool cpu_check_jp_interrupt(Cpu *cpu, Bus *bus, u8 mask, u16 address) {
+    if ((bus->reg_if & bus->reg_ie & mask) == 0) return false;
+
+    bus->reg_if &= ~mask;
+
+    // Save address to call into. (See `interrupt_call_instruction[]`)
+    split_u16(address, &cpu->jp_hi, &cpu->jp_lo);
+
+    cpu->is_jp_interrupt = true;
+    cpu->halted = false;
+    cpu->ime = false;
+
+    return true;
+}
+
+// Same as CALL instruction, but without the initial (PC++) reads.
+MicroInstr interrupt_call_instruction[MICRO_INSTRUCTION_SIZE] = {
+    {.uop = LD_R8_R8, .lhs = BUS, .rhs = PC_HI, .io = WRITE_SP_DEC},
+    {.uop = LD_R8_R8, .lhs = BUS, .rhs = PC_LO, .io = WRITE_SP_DEC},
+    {.uop = JP, .end = true},
+};
+
 void cpu_init(Cpu *cpu) {
     assert(cpu);
     memset(cpu, 0, sizeof(Cpu));
@@ -378,25 +416,60 @@ void cpu_init_post_boot_dmg(Cpu *cpu) {
 
 void cpu_cycle(Cpu *cpu, Bus *bus) {
     assert(cpu);
-    if (cpu->halted) return;
 
-    if (cpu->ime_scheduled) {
-        cpu->ime_scheduled = false;
-        cpu->ime = true;
-    }
+    // Section 1 - Bus Read
 
     if (cpu->ucode_step == 0) {
-        // Read next opcode
-        cpu->opcode = bus_read(bus, cpu->pc++);
-
         // Reset intra-micro-instruction registers to "uninitialized" state
+        cpu->is_jp_interrupt = false;
         cpu->jp_lo = 0xAA;
         cpu->jp_hi = 0xAA;
         cpu->bus_reg = 0xAA;
+
+        // Handle interrupts
+        if (cpu->ime) {
+            // Check each interrupt for a jump in priority order
+            do {
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_VBLANK_MASK,
+                                           INTR_VBLANK_ADDR)) {
+                    break;
+                }
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_LCD_STAT_MASK,
+                                           INTR_LCD_STAT_ADDR)) {
+                    break;
+                }
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_TIMER_MASK,
+                                           INTR_TIMER_ADDR)) {
+                    break;
+                }
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_SERIAL_MASK,
+                                           INTR_SERIAL_ADDR)) {
+                    break;
+                }
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_JOYPAD_MASK,
+                                           INTR_JOYPAD_ADDR)) {
+                    break;
+                }
+            } while (0);
+        }
+        // IE sets IME after 1 instruction delay
+        else if (cpu->ime_scheduled) {
+            cpu->ime_scheduled = false;
+            cpu->ime = true;
+        }
+
+        if (cpu->halted) return;
+
+        // Read next opcode (if not calling interrupt)
+        if (!cpu->is_jp_interrupt) {
+            cpu->opcode = bus_read(bus, cpu->pc++);
+        }
     }
 
     const MicroInstr *uinst =
-        instructions_get_uinst(cpu->opcode, cpu->ucode_step);
+        cpu->is_jp_interrupt
+            ? &interrupt_call_instruction[cpu->ucode_step]
+            : instructions_get_uinst(cpu->opcode, cpu->ucode_step);
 
     if (uinst->undefined) {
         panicf("Executing undefined instr: $%02X (step %d)", cpu->opcode,
@@ -404,9 +477,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     }
 
     // Make sure we aren't doing multiple bus interactions on the same step
-    assert(cpu->ucode_step != 0 || uinst->io == IO_NONE);
-
-    // Section 1 - Bus Read
+    assert(cpu->is_jp_interrupt || cpu->ucode_step != 0 ||
+           uinst->io == IO_NONE);
 
     switch (uinst->io) {
         case IO_NONE:
@@ -641,11 +713,12 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 
     // Section 4 - Counters/Conditions
 
-    if (instructions_is_last_ustep(cpu->opcode, cpu->ucode_step)) {
+    if (uinst->end) {
         cpu->ucode_step = 0;
     } else {
         ++cpu->ucode_step;
     }
+    assert(cpu->ucode_step < MICRO_INSTRUCTION_SIZE);
 
     switch (uinst->cond) {
         case COND_ALWAYS:

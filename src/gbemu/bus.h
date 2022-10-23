@@ -11,10 +11,11 @@
 typedef struct Bus {
     const Rom *boot;
     Cartridge *cart;
-    Ram *cart_ram;
     Ram *work_ram;
     Ram *high_ram;
-    u8 ie;
+
+    u8 reg_if;
+    u8 reg_ie;
 
     bool is_bootrom_disabled;
 } Bus;

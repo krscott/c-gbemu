@@ -21,6 +21,7 @@ typedef struct Cpu {
     bool halted;
     size_t cycle;
 
+    bool is_jp_interrupt;
     u8 bus_reg;
     u8 jp_lo;
     u8 jp_hi;

@@ -13,7 +13,7 @@ void bus_init_booted(Bus *bus) {
     bus->is_bootrom_disabled = true;
 }
 
-u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
+u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
     assert(bus);
 
     // 0x0000..=0x3FFF Boot ROM bank 0
@@ -38,7 +38,7 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0x8000..=0x9FFF VRAM
     else if (address < 0xA000) {
-        if (!debug_peek) panicf("TODO: VRAM $%04X", address);
+        if (!debug_peek) errorf("TODO: VRAM $%04X", address);
         return 0;
     }
 
@@ -80,7 +80,7 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
-        if (!debug_peek) panicf("TODO: OAM $%04X", address);
+        if (!debug_peek) errorf("TODO: OAM $%04X", address);
         return 0;
     }
 
@@ -92,7 +92,11 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xFF00..=0xFF7F I/O Registers
     else if (address < 0xFF80) {
-        if (!debug_peek) panicf("TODO: I/O $%04X", address);
+        switch (address) {
+            case 0xFF0F:  // Interrupt Flag
+                return bus->reg_if;
+        }
+        if (!debug_peek) errorf("TODO: I/O $%04X", address);
         return 0;
     }
 
@@ -113,17 +117,17 @@ u8 _bus_read(const Bus *bus, u16 address, bool debug_peek) {
     }
 
     assert(address == 0xFFFF);
-    return bus->ie;
+    return bus->reg_ie;
 }
 
 u8 bus_read(const Bus *bus, u16 address) {
-    u8 out = _bus_read(bus, address, false);
+    u8 out = bus_read_helper(bus, address, false);
     // printf("  %04X R $%02X\n", address, out);
     return out;
 }
 
 u8 bus_debug_peek(const Bus *bus, u16 address) {
-    return _bus_read(bus, address, true);
+    return bus_read_helper(bus, address, true);
 }
 
 void bus_write(Bus *bus, u16 address, u8 value) {
@@ -139,7 +143,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0x8000..=0x9FFF VRAM
     else if (address < 0xA000) {
-        panicf("TODO: VRAM $%04X", address);
+        errorf("TODO: VRAM $%04X", address);
         return;
     }
 
@@ -180,7 +184,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
-        panicf("TODO: OAM $%04X", address);
+        errorf("TODO: OAM $%04X", address);
         return;
     }
 
@@ -192,6 +196,11 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xFF00..=0xFF7F I/O Registers
     else if (address < 0xFF80) {
+        switch (address) {
+            case 0xFF0F:  // Interrupt Flag
+                bus->reg_if = value & 0x1F;
+                return;
+        }
         errorf("TODO: I/O $%04X", address);
         return;
     }
@@ -212,5 +221,5 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     }
 
     assert(address == 0xFFFF);
-    bus->ie = value;
+    bus->reg_ie = value;
 }

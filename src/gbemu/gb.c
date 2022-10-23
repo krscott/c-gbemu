@@ -12,10 +12,6 @@ GameBoy *gb_alloc_with_cart(const char *cart_filename, RomLoadErr *err) {
         gb->bus.cart = cart_alloc_from_file(cart_filename, err);
         if (!gb->bus.cart) break;
 
-        // TODO: Determine RAM size based on cart header
-        gb->bus.cart_ram = ram_alloc_blank(CART_RAM_BANK_SIZE);
-        if (!gb->bus.cart_ram) break;
-
         gb->bus.work_ram = ram_alloc_blank(WORK_RAM_SIZE);
         if (!gb->bus.work_ram) break;
 
@@ -37,7 +33,6 @@ void gb_dealloc(GameBoy **gb) {
     cart_dealloc(&(*gb)->bus.cart);
     ram_dealloc(&(*gb)->bus.work_ram);
     ram_dealloc(&(*gb)->bus.high_ram);
-    ram_dealloc(&(*gb)->bus.cart_ram);
 
     free(*gb);
     *gb = NULL;
