@@ -7,7 +7,7 @@ void rom_deinit(Rom *rom) {
     free((void *)rom->data);
 }
 
-GbemuError rom_init_from_buffer(Rom *rom, const u8 *buffer, size_t size) {
+GbErr rom_init_from_buffer(Rom *rom, const u8 *buffer, size_t size) {
     assert(rom);
     assert(buffer);
 
@@ -26,7 +26,7 @@ void close_file(FILE **fp) {
     *fp = NULL;
 }
 
-GbemuError rom_init_from_file(Rom *rom, const char *filename) {
+GbErr rom_init_from_file(Rom *rom, const char *filename) {
     assert(rom);
     assert(filename);
 

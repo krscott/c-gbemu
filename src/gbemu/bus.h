@@ -20,13 +20,12 @@ typedef struct Bus {
     bool is_bootrom_disabled;
 } Bus;
 
-GbemuError bus_init(Bus *bus) nodiscard;
-GbemuError bus_load_cart_from_file(Bus *bus,
-                                   const char *cart_filename) nodiscard;
-GbemuError bus_load_cart_from_buffer(Bus *bus, const u8 *buffer,
-                                     size_t size) nodiscard;
-GbemuError bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer,
-                                        size_t size) nodiscard;
+GbErr bus_init(Bus *bus) nodiscard;
+GbErr bus_load_cart_from_file(Bus *bus, const char *cart_filename) nodiscard;
+GbErr bus_load_cart_from_buffer(Bus *bus, const u8 *buffer,
+                                size_t size) nodiscard;
+GbErr bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer,
+                                   size_t size) nodiscard;
 
 void bus_deinit(Bus *bus);
 

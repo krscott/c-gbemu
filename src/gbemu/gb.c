@@ -1,9 +1,9 @@
 #include "gb.h"
 
-GbemuError gb_init(GameBoy *gb) {
+GbErr gb_init(GameBoy *gb) {
     assert(gb);
 
-    GbemuError err;
+    GbErr err;
 
     do {
         cpu_reset(&gb->cpu);
@@ -22,15 +22,15 @@ GbemuError gb_init(GameBoy *gb) {
 
 void gb_deinit(GameBoy *gb) { bus_deinit(&gb->bus); }
 
-GbemuError gb_load_rom_file(GameBoy *gb, const char *cart_filename) {
+GbErr gb_load_rom_file(GameBoy *gb, const char *cart_filename) {
     return bus_load_cart_from_file(&gb->bus, cart_filename);
 }
 
-GbemuError gb_load_rom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
+GbErr gb_load_rom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
     return bus_load_cart_from_buffer(&gb->bus, buffer, size);
 }
 
-GbemuError gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
+GbErr gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
     return bus_load_bootrom_from_buffer(&gb->bus, buffer, size);
 }
 

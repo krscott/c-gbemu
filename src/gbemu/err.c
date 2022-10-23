@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-const char *err_str(GbemuError err) {
+const char *err_str(GbErr err) {
     switch (err) {
         case OK:
             // Invalid argument for this function
@@ -20,7 +20,7 @@ const char *err_str(GbemuError err) {
     }
 }
 
-void err_exit(GbemuError err) {
+void err_exit(GbErr err) {
     if (err) {
         fprintf(stderr, "Error: %s", err_str(err));
         exit(err);

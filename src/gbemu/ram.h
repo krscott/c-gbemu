@@ -8,7 +8,7 @@ typedef struct Ram {
     u8 *data;
 } Ram;
 
-GbemuError ram_init(Ram *ram, size_t size) nodiscard;
+GbErr ram_init(Ram *ram, size_t size) nodiscard;
 void ram_deinit(Ram *ram);
 
 /// @brief Read data at the given address of the RAM.

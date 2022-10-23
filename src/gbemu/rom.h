@@ -8,8 +8,8 @@ typedef struct Rom {
     const u8 *data;
 } Rom;
 
-GbemuError rom_init_from_buffer(Rom *rom, const u8 *buffer, size_t n) nodiscard;
-GbemuError rom_init_from_file(Rom *rom, const char *filename) nodiscard;
+GbErr rom_init_from_buffer(Rom *rom, const u8 *buffer, size_t n) nodiscard;
+GbErr rom_init_from_file(Rom *rom, const char *filename) nodiscard;
 void rom_init_none(Rom *rom);
 
 void rom_deinit(Rom *rom);

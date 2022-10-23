@@ -256,10 +256,10 @@ bool cart_is_valid_header(const Cartridge *cart) {
     return (u8)(chk & 0xff) == header->checksum;
 }
 
-GbemuError cart_mc_init(Cartridge *cart, size_t ram_size) {
+GbErr cart_mc_init(Cartridge *cart, size_t ram_size) {
     assert(cart);
 
-    GbemuError err = ram_init(&cart->ram, ram_size);
+    GbErr err = ram_init(&cart->ram, ram_size);
     if (err) return err;
 
     cart->ram_en = false;
@@ -270,10 +270,10 @@ GbemuError cart_mc_init(Cartridge *cart, size_t ram_size) {
     return OK;
 }
 
-GbemuError cart_init_none(Cartridge *cart) {
+GbErr cart_init_none(Cartridge *cart) {
     assert(cart);
 
-    GbemuError err;
+    GbErr err;
 
     do {
         rom_init_none(&cart->rom);
@@ -293,10 +293,10 @@ GbemuError cart_init_none(Cartridge *cart) {
     return err;
 }
 
-GbemuError cart_init(Cartridge *cart, const char *filename) {
+GbErr cart_init(Cartridge *cart, const char *filename) {
     assert(cart);
 
-    GbemuError err;
+    GbErr err;
 
     do {
         err = rom_init_from_file(&cart->rom, filename);
@@ -313,11 +313,10 @@ GbemuError cart_init(Cartridge *cart, const char *filename) {
     return err;
 }
 
-GbemuError cart_init_from_buffer(Cartridge *cart, const u8 *buffer,
-                                 size_t size) {
+GbErr cart_init_from_buffer(Cartridge *cart, const u8 *buffer, size_t size) {
     assert(cart);
 
-    GbemuError err;
+    GbErr err;
 
     do {
         err = rom_init_from_buffer(&cart->rom, buffer, size);

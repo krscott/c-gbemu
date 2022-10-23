@@ -42,20 +42,20 @@ typedef struct Cartridge {
 /// @param cart
 /// @param filename The name of the file. Must not be NULL.
 /// @return Error code
-GbemuError cart_init(Cartridge *cart, const char *filename) nodiscard;
+GbErr cart_init(Cartridge *cart, const char *filename) nodiscard;
 
 /// @brief Initialize cartridge without ROM data
 /// @param cart
 /// @return Error code
-GbemuError cart_init_none(Cartridge *cart) nodiscard;
+GbErr cart_init_none(Cartridge *cart) nodiscard;
 
 /// @brief Initialize cartridge by copying data from given buffer
 /// @param cart
 /// @param buffer
 /// @param size
 /// @return Error code
-GbemuError cart_init_from_buffer(Cartridge *cart, const u8 *buffer,
-                                 size_t size);
+GbErr cart_init_from_buffer(Cartridge *cart, const u8 *buffer,
+                            size_t size) nodiscard;
 
 /// @brief Deinitialize cartridge and free child data
 /// @param cart

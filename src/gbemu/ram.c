@@ -2,7 +2,7 @@
 
 #include <string.h>  // memset
 
-GbemuError ram_init(Ram *ram, size_t size) {
+GbErr ram_init(Ram *ram, size_t size) {
     assert(ram);
 
     if (size > 0) {

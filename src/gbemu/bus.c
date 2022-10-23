@@ -5,10 +5,10 @@
 #include "cart.h"
 #include "rom.h"
 
-GbemuError bus_init(Bus *bus) {
+GbErr bus_init(Bus *bus) {
     assert(bus);
 
-    GbemuError err;
+    GbErr err;
 
     do {
         // Already booted, so don't need to allocate ROM
@@ -40,18 +40,17 @@ void bus_deinit(Bus *bus) {
     ram_deinit(&bus->high_ram);
 }
 
-GbemuError bus_load_cart_from_file(Bus *bus, const char *cart_filename) {
+GbErr bus_load_cart_from_file(Bus *bus, const char *cart_filename) {
     cart_deinit(&bus->cart);
     return cart_init(&bus->cart, cart_filename);
 }
 
-GbemuError bus_load_cart_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
+GbErr bus_load_cart_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
     cart_deinit(&bus->cart);
     return cart_init_from_buffer(&bus->cart, buffer, size);
 }
 
-GbemuError bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer,
-                                        size_t size) {
+GbErr bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
     rom_deinit(&bus->boot);
     return rom_init_from_buffer(&bus->boot, buffer, size);
 }
