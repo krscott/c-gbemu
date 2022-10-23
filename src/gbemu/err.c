@@ -22,7 +22,7 @@ const char *err_str(GbErr err) {
 
 void err_exit(GbErr err) {
     if (err) {
-        fprintf(stderr, "Error: %s", err_str(err));
+        fprintf(stderr, "Error: %s\n", err_str(err));
         exit(err);
     }
 }
