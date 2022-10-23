@@ -9,6 +9,7 @@
 typedef struct GameBoy {
     Cpu cpu;
     Bus bus;
+    bool trace_cpu_en;
 } GameBoy;
 
 GbemuError gb_init(GameBoy *gb) nodiscard;

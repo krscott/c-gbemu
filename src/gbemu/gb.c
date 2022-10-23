@@ -11,6 +11,8 @@ GbemuError gb_init(GameBoy *gb) {
         err = bus_init(&gb->bus);
         if (err) break;
 
+        gb->trace_cpu_en = false;
+
         return OK;
     } while (0);
 
@@ -42,7 +44,7 @@ void gb_cycle(GameBoy *gb) { cpu_cycle(&gb->cpu, &gb->bus); }
 void gb_run_until_halt(GameBoy *gb) {
     gb->cpu.halted = false;
     while (!gb->cpu.halted) {
-        cpu_print_trace(&gb->cpu, &gb->bus);
+        if (gb->trace_cpu_en) cpu_print_trace(&gb->cpu, &gb->bus);
         cpu_cycle(&gb->cpu, &gb->bus);
     }
 }
