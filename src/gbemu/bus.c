@@ -192,7 +192,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xFF00..=0xFF7F I/O Registers
     else if (address < 0xFF80) {
-        panicf("TODO: I/O $%04X", address);
+        errorf("TODO: I/O $%04X", address);
         return;
     }
 
