@@ -9,10 +9,10 @@
 #define HIGH_RAM_SIZE 0x007F
 
 typedef struct Bus {
-    const Rom *boot;
-    Cartridge *cart;
-    Ram *work_ram;
-    Ram *high_ram;
+    Rom boot;
+    Cartridge cart;
+    Ram work_ram;
+    Ram high_ram;
 
     u8 reg_if;
     u8 reg_ie;
@@ -20,7 +20,15 @@ typedef struct Bus {
     bool is_bootrom_disabled;
 } Bus;
 
-void bus_init_booted(Bus *bus);
+GbemuError bus_init(Bus *bus) nodiscard;
+GbemuError bus_load_cart_from_file(Bus *bus,
+                                   const char *cart_filename) nodiscard;
+GbemuError bus_load_cart_from_buffer(Bus *bus, const u8 *buffer,
+                                     size_t size) nodiscard;
+GbemuError bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer,
+                                        size_t size) nodiscard;
+
+void bus_deinit(Bus *bus);
 
 /// @brief Read data from the bus
 /// @param bus Must not be NULL

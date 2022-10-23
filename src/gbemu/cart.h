@@ -30,29 +30,36 @@ typedef struct {
 static_assert(sizeof(CartHeaderView) == 0x50);
 
 typedef struct Cartridge {
-    const Rom *rom;
-    Ram *ram;
+    Rom rom;
+    Ram ram;
     bool ram_en;
     u8 bank_sel_lower;
     u8 bank_sel_upper;
     u8 bank_mode;
 } Cartridge;
 
-/// @brief Set cartridge to default initialized state
+/// @brief Initialize cartridge and allocate ROM data from file
 /// @param cart
-void cart_init(Cartridge *cart);
-
-/// @brief Load and validate a cart from file and store on the heap. Calls
-/// malloc() internally.
 /// @param filename The name of the file. Must not be NULL.
-/// @param err Pointer to the error code storage. May be NULL.
-/// @return Pointer to a Cartridge. NULL if cart could not be loaded. Resutling
-/// pointer must be called with cart_dealloc to free its memory.
-Cartridge *cart_alloc_from_file(const char *filename, RomLoadErr *err);
+/// @return Error code
+GbemuError cart_init(Cartridge *cart, const char *filename) nodiscard;
 
-/// @brief De-allocate Cartridge memory. Calls free() internally.
-/// @param cart May be null
-void cart_dealloc(Cartridge **cart);
+/// @brief Initialize cartridge without ROM data
+/// @param cart
+/// @return Error code
+GbemuError cart_init_none(Cartridge *cart) nodiscard;
+
+/// @brief Initialize cartridge by copying data from given buffer
+/// @param cart
+/// @param buffer
+/// @param size
+/// @return Error code
+GbemuError cart_init_from_buffer(Cartridge *cart, const u8 *buffer,
+                                 size_t size);
+
+/// @brief Deinitialize cartridge and free child data
+/// @param cart
+void cart_deinit(Cartridge *cart);
 
 /// @brief Read data at the given address of the cartridge.
 /// @param cart Must not be NULL

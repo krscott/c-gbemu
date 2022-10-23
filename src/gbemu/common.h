@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
+#include "err.h"
 #include "logging.h"
 
 // Type abbreviations
@@ -21,3 +22,5 @@ typedef int64_t i64;
 
 /// Defer macro which wraps "cleanup" attribute
 #define defer(func) __attribute__((cleanup(func)))
+
+#define nodiscard __attribute__((warn_unused_result))

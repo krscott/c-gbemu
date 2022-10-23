@@ -22,12 +22,11 @@
 void test_cart(void) {
     const char *filename = "roms/01-special.gb";
 
-    RomLoadErr err;
-    GameBoy *gb defer(gb_dealloc) = gb_alloc_with_cart(filename, &err);
-    if (err) panicf("Error loading cart: %s", filename);
-    ASSERT_EQ_U8(err, ROM_OK);
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_rom_file(&gb, filename));
 
-    Cartridge *cart = gb->bus.cart;
+    Cartridge *cart = &gb.bus.cart;
     ASSERT(cart);
     ASSERT(cart_is_valid_header(cart));
 
@@ -64,38 +63,38 @@ void test_cpu_jp(void) {
     const u8 prog[] = {
         0xC3, 0xAA, 0xBB,  // JP $BBAA
     };
-    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
-    Bus bus = {.boot = rom};
-    Cpu cpu = {0};
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
     // Read opcode
-    cpu_cycle(&cpu, &bus);
-    ASSERT_EQ_U8(cpu.opcode, 0xC3);
-    ASSERT_EQ_U8(cpu.cycle, 1);
-    ASSERT_EQ_U8(cpu.pc, 1);
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.opcode, 0xC3);
+    ASSERT_EQ_U8(gb.cpu.cycle, 1);
+    ASSERT_EQ_U8(gb.cpu.pc, 1);
 
     // Read address
-    cpu_cycle(&cpu, &bus);
-    cpu_cycle(&cpu, &bus);
-    ASSERT_EQ_U8(cpu.pc, 3);
+    gb_cycle(&gb);
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.pc, 3);
 
     // Jump
-    cpu_cycle(&cpu, &bus);
-    // cpu_print_info(&cpu);
-    ASSERT_EQ_U8(cpu.pc, 0xBBAA);
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.pc, 0xBBAA);
 }
 
 void test_cpu_halt(void) {
     const u8 prog[] = {
         0x76,  // HALT
     };
-    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
-    Bus bus = {.boot = rom};
-    Cpu cpu = {0};
 
-    ASSERT(!cpu.halted);
-    cpu_cycle(&cpu, &bus);
-    ASSERT(cpu.halted);
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
+
+    ASSERT(!gb.cpu.halted);
+    gb_cycle(&gb);
+    ASSERT(gb.cpu.halted);
 }
 
 void test_cpu_ld_xor(void) {
@@ -108,23 +107,18 @@ void test_cpu_ld_xor(void) {
         0xAF,        // XOR A     ; expect A == 0x00, F == 0x80
         0x76,        // HALT
     };
-    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
-    Bus bus = {.boot = rom};
-    Cpu cpu = {0};
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    gb_run_until_halt(&gb);
 
-    ASSERT_EQ_U8(cpu.a, 0xA5);
-    ASSERT_EQ_U8(cpu.f, 0x00);
+    ASSERT_EQ_U8(gb.cpu.a, 0xA5);
+    ASSERT_EQ_U8(gb.cpu.f, 0x00);
 
-    cpu.halted = false;
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
-    ASSERT_EQ_U8(cpu.a, 0x00);
-    ASSERT_EQ_U8(cpu.f, 0x80);
+    gb_run_until_halt(&gb);
+    ASSERT_EQ_U8(gb.cpu.a, 0x00);
+    ASSERT_EQ_U8(gb.cpu.f, 0x80);
 }
 
 void test_cpu_inc_dec(void) {
@@ -134,26 +128,26 @@ void test_cpu_inc_dec(void) {
         0x04,  // INC B ; expect B == 0xFF, F == 0x00
         0x04,  // INC B ; expect B == 0x00, F == 0xA0
     };
-    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
-    Bus bus = {.boot = rom};
-    Cpu cpu = {0};
 
-    cpu_cycle(&cpu, &bus);
-    ASSERT_EQ_U8(cpu.b, 0xFF);
-    ASSERT_EQ_U8(cpu.f, 0x60);
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
-    cpu_cycle(&cpu, &bus);
-    ASSERT_EQ_U8(cpu.b, 0xFE);
-    ASSERT_EQ_U8(cpu.f, 0x60);
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.b, 0xFF);
+    ASSERT_EQ_U8(gb.cpu.f, 0x60);
 
-    cpu_cycle(&cpu, &bus);
-    ASSERT_EQ_U8(cpu.b, 0xFF);
-    ASSERT_EQ_U8(cpu.f, 0x00);
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.b, 0xFE);
+    ASSERT_EQ_U8(gb.cpu.f, 0x60);
 
-    cpu_cycle(&cpu, &bus);
-    // cpu_print_info(&cpu);
-    ASSERT_EQ_U8(cpu.b, 0x00);
-    ASSERT_EQ_U8(cpu.f, 0xA0);
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.b, 0xFF);
+    ASSERT_EQ_U8(gb.cpu.f, 0x00);
+
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.b, 0x00);
+    ASSERT_EQ_U8(gb.cpu.f, 0xA0);
 }
 
 void test_cpu_hl(void) {
@@ -164,15 +158,13 @@ void test_cpu_hl(void) {
         0x77,        // LD (HL),A
         0x76,        // HALT
     };
-    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
-    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
-    Bus bus = {.boot = rom, .work_ram = work_ram};
-    Cpu cpu = {0};
 
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
-    ASSERT_EQ_U8(bus_read(&bus, 0xC000), 0x55);
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
+
+    gb_run_until_halt(&gb);
+    ASSERT_EQ_U8(bus_read(&gb.bus, 0xC000), 0x55);
 }
 
 void test_cpu_arith(void) {
@@ -201,57 +193,40 @@ void test_cpu_arith(void) {
         0x98,        // SBC A,B  ; A: $FA, F: 0111
         0x76,        // HALT     ; #6
     };
-    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
-    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
-    Bus bus = {.boot = rom, .work_ram = work_ram};
-    Cpu cpu = {0};
 
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
+
+    gb_run_until_halt(&gb);
     // Halt 1
-    ASSERT_EQ_U8(cpu.a, 0x03);
-    ASSERT_EQ_U8(cpu.f, 0x00);
+    ASSERT_EQ_U8(gb.cpu.a, 0x03);
+    ASSERT_EQ_U8(gb.cpu.f, 0x00);
 
-    cpu.halted = false;
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    gb_run_until_halt(&gb);
     // Halt 2
-    ASSERT_EQ_U8(cpu.a, 0x00);
-    ASSERT_EQ_U8(cpu.f, 0xB0);
+    ASSERT_EQ_U8(gb.cpu.a, 0x00);
+    ASSERT_EQ_U8(gb.cpu.f, 0xB0);
 
-    cpu.halted = false;
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    gb_run_until_halt(&gb);
     // Halt 3
-    ASSERT_EQ_U8(cpu.a, 0x02);
-    ASSERT_EQ_U8(cpu.f, 0x00);
+    ASSERT_EQ_U8(gb.cpu.a, 0x02);
+    ASSERT_EQ_U8(gb.cpu.f, 0x00);
 
-    cpu.halted = false;
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    gb_run_until_halt(&gb);
     // Halt 4
-    ASSERT_EQ_U8(cpu.a, 0xFF);
-    ASSERT_EQ_U8(cpu.f, 0x40);
+    ASSERT_EQ_U8(gb.cpu.a, 0xFF);
+    ASSERT_EQ_U8(gb.cpu.f, 0x40);
 
-    cpu.halted = false;
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    gb_run_until_halt(&gb);
     // Halt 5
-    ASSERT_EQ_U8(cpu.a, 0xFD);
-    ASSERT_EQ_U8(cpu.f, 0x70);
+    ASSERT_EQ_U8(gb.cpu.a, 0xFD);
+    ASSERT_EQ_U8(gb.cpu.f, 0x70);
 
-    cpu.halted = false;
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
+    gb_run_until_halt(&gb);
     // Halt 6
-    ASSERT_EQ_U8(cpu.a, 0xFA);
-    ASSERT_EQ_U8(cpu.f, 0x70);
+    ASSERT_EQ_U8(gb.cpu.a, 0xFA);
+    ASSERT_EQ_U8(gb.cpu.f, 0x70);
 }
 
 void test_interrupt(void) {
@@ -268,28 +243,26 @@ void test_interrupt(void) {
         0x00,              // NOP
         0x00,              // NOP
     };
-    const Rom *rom defer(rom_dealloc) = rom_alloc_from_buf(prog, sizeof(prog));
-    Ram *work_ram defer(ram_dealloc) = ram_alloc_blank(WORK_RAM_SIZE);
-    Bus bus = {.boot = rom, .work_ram = work_ram};
-    Cpu cpu = {0};
 
-    while (!cpu.halted) {
-        cpu_cycle(&cpu, &bus);
-    }
-    ASSERT_EQ_U8(bus.reg_ie, 0x02);
-    ASSERT(cpu.ime);
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+    err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
-    cpu.halted = false;
+    gb_run_until_halt(&gb);
+    ASSERT_EQ_U8(gb.bus.reg_ie, 0x02);
+    ASSERT(gb.cpu.ime);
+
+    gb.cpu.halted = false;
     // Trigger interrupt
-    bus.reg_if = bus.reg_ie;
+    gb.bus.reg_if = gb.bus.reg_ie;
 
     // Interrupt call is 3 cycles, then check that PC is
     // LCD_STAT -> INT $48
-    cpu_cycle(&cpu, &bus);
-    cpu_cycle(&cpu, &bus);
-    ASSERT(cpu.pc != 0x0048);
-    cpu_cycle(&cpu, &bus);
-    ASSERT_EQ_U8(cpu.pc, 0x0048);
+    gb_cycle(&gb);
+    gb_cycle(&gb);
+    ASSERT(gb.cpu.pc != 0x0048);
+    gb_cycle(&gb);
+    ASSERT_EQ_U8(gb.cpu.pc, 0x0048);
 }
 
 int main(void) {

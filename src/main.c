@@ -60,17 +60,18 @@ int main(int argc, char *args[]) {
         return 1;
     }
 
-    RomLoadErr err;
-    GameBoy *gb defer(gb_dealloc) = gb_alloc_with_cart(filename, &err);
-    if (err) panicf("Error loading cart: %s", filename);
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
 
-    cart_print_info(gb->bus.cart, filename);
+    err_exit(gb_load_rom_file(&gb, filename));
+    cart_print_info(&gb.bus.cart, filename);
 
-    if (!cart_is_valid_header(gb->bus.cart)) {
+    if (!cart_is_valid_header(&gb.bus.cart)) {
         error("ROM header is invalid");
     }
 
-    gb_run_until_halt(gb);
+    gb_boot_dmg(&gb);
+    gb_run_until_halt(&gb);
 
     // window();
 

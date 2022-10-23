@@ -36,8 +36,8 @@ u16 cpu_bc(Cpu *cpu);
 u16 cpu_de(Cpu *cpu);
 u16 cpu_hl(Cpu *cpu);
 
-void cpu_init(Cpu *cpu);
-void cpu_init_post_boot_dmg(Cpu *cpu);
+void cpu_reset(Cpu *cpu);
+void cpu_reset_boot_dmg(Cpu *cpu);
 
 void cpu_cycle(Cpu *cpu, Bus *bus);
 

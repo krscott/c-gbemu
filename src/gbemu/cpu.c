@@ -392,15 +392,15 @@ const MicroInstr interrupt_call_instruction[MICRO_INSTRUCTION_SIZE] = {
     {.uop = JP, .end = true},
 };
 
-void cpu_init(Cpu *cpu) {
+void cpu_reset(Cpu *cpu) {
     assert(cpu);
     memset(cpu, 0, sizeof(Cpu));
 
     cpu->ime = true;
 }
 
-void cpu_init_post_boot_dmg(Cpu *cpu) {
-    cpu_init(cpu);
+void cpu_reset_boot_dmg(Cpu *cpu) {
+    cpu_reset(cpu);
 
     cpu->a = 0x01;
     cpu->f = FZ;

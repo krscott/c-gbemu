@@ -2,17 +2,14 @@
 
 #include "common.h"
 
-/// @brief Dynamically-sized container of read/write memory
+/// @brief Container of variable-size read/write memory
 typedef struct Ram {
     size_t size;
-    u8 data[];
+    u8 *data;
 } Ram;
 
-Ram *ram_alloc_blank(size_t size);
-
-/// @brief De-allocate Ram memory. Calls free() internally.
-/// @param ram May be null
-void ram_dealloc(Ram **ram);
+GbemuError ram_init(Ram *ram, size_t size) nodiscard;
+void ram_deinit(Ram *ram);
 
 /// @brief Read data at the given address of the RAM.
 /// @param ram Must not be NULL

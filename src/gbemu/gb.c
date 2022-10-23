@@ -1,42 +1,43 @@
 #include "gb.h"
 
-GameBoy *gb_alloc_with_cart(const char *cart_filename, RomLoadErr *err) {
-    GameBoy *gb = NULL;
+GbemuError gb_init(GameBoy *gb) {
+    assert(gb);
+
+    GbemuError err;
 
     do {
-        gb = malloc(sizeof(GameBoy));
-        if (!gb) break;
-        cpu_init_post_boot_dmg(&gb->cpu);
-        bus_init_booted(&gb->bus);
+        cpu_reset(&gb->cpu);
 
-        gb->bus.cart = cart_alloc_from_file(cart_filename, err);
-        if (!gb->bus.cart) break;
+        err = bus_init(&gb->bus);
+        if (err) break;
 
-        gb->bus.work_ram = ram_alloc_blank(WORK_RAM_SIZE);
-        if (!gb->bus.work_ram) break;
-
-        gb->bus.high_ram = ram_alloc_blank(HIGH_RAM_SIZE);
-        if (!gb->bus.high_ram) break;
-
-        return gb;
+        return OK;
     } while (0);
 
-    // Error cleanup
-    gb_dealloc(&gb);
-
-    return NULL;
+    gb_deinit(gb);
+    return err;
 }
 
-void gb_dealloc(GameBoy **gb) {
-    if (!*gb) return;
+void gb_deinit(GameBoy *gb) { bus_deinit(&gb->bus); }
 
-    cart_dealloc(&(*gb)->bus.cart);
-    ram_dealloc(&(*gb)->bus.work_ram);
-    ram_dealloc(&(*gb)->bus.high_ram);
-
-    free(*gb);
-    *gb = NULL;
+GbemuError gb_load_rom_file(GameBoy *gb, const char *cart_filename) {
+    return bus_load_cart_from_file(&gb->bus, cart_filename);
 }
+
+GbemuError gb_load_rom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
+    return bus_load_cart_from_buffer(&gb->bus, buffer, size);
+}
+
+GbemuError gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
+    return bus_load_bootrom_from_buffer(&gb->bus, buffer, size);
+}
+
+void gb_boot_dmg(GameBoy *gb) {
+    cpu_reset_boot_dmg(&gb->cpu);
+    gb->bus.is_bootrom_disabled = true;
+}
+
+void gb_cycle(GameBoy *gb) { cpu_cycle(&gb->cpu, &gb->bus); }
 
 void gb_run_until_halt(GameBoy *gb) {
     gb->cpu.halted = false;

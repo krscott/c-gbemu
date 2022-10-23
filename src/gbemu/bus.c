@@ -5,12 +5,55 @@
 #include "cart.h"
 #include "rom.h"
 
-void bus_init_booted(Bus *bus) {
+GbemuError bus_init(Bus *bus) {
     assert(bus);
 
-    memset(bus, 0, sizeof(Bus));
+    GbemuError err;
 
-    bus->is_bootrom_disabled = true;
+    do {
+        // Already booted, so don't need to allocate ROM
+        rom_init_none(&bus->boot);
+
+        err = cart_init_none(&bus->cart);
+        if (err) break;
+
+        err = ram_init(&bus->work_ram, WORK_RAM_SIZE);
+        if (err) break;
+
+        err = ram_init(&bus->high_ram, HIGH_RAM_SIZE);
+        if (err) break;
+
+        bus->reg_if = 0;
+        bus->reg_ie = 0;
+        bus->is_bootrom_disabled = false;
+
+        return OK;
+    } while (0);
+
+    return err;
+}
+
+void bus_deinit(Bus *bus) {
+    rom_deinit(&bus->boot);
+    cart_deinit(&bus->cart);
+    ram_deinit(&bus->work_ram);
+    ram_deinit(&bus->high_ram);
+}
+
+GbemuError bus_load_cart_from_file(Bus *bus, const char *cart_filename) {
+    cart_deinit(&bus->cart);
+    return cart_init(&bus->cart, cart_filename);
+}
+
+GbemuError bus_load_cart_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
+    cart_deinit(&bus->cart);
+    return cart_init_from_buffer(&bus->cart, buffer, size);
+}
+
+GbemuError bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer,
+                                        size_t size) {
+    rom_deinit(&bus->boot);
+    return rom_init_from_buffer(&bus->boot, buffer, size);
 }
 
 u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
@@ -18,22 +61,13 @@ u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0x0000..=0x3FFF Boot ROM bank 0
     if (address < 0x4000 && !bus->is_bootrom_disabled) {
-        assert(bus->boot);
-        return rom_read(bus->boot, address);
+        return rom_read(&bus->boot, address);
     }
 
     // 0x0000..=0x3FFF Cart ROM bank 0
     // 0x4000..=0x7FFF Cart ROM bank N
     else if (address < 0x8000) {
-        if (!bus->cart) {
-            if (!debug_peek) {
-                errorf("Attempting to read cart at $%04X but no cart inserted",
-                       address);
-            }
-            return 0;
-        }
-
-        return cart_read(bus->cart, address);
+        return cart_read(&bus->cart, address);
     }
 
     // 0x8000..=0x9FFF VRAM
@@ -44,38 +78,22 @@ u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xA000..=0xBFFF External RAM
     else if (address < 0xC000) {
-        if (!bus->work_ram) {
-            if (!debug_peek) {
-                panicf("Attempting to read ExRAM at $%04X but it is NULL",
-                       address);
-            }
-            return 0;
-        }
-
         u16 internal_address = address - 0xA000;
         assert(internal_address < CART_RAM_BANK_SIZE);
 
-        return ram_read(bus->work_ram, internal_address);
+        return ram_read(&bus->work_ram, internal_address);
     }
 
     // 0xC000..=0xCFFF Work RAM
     // 0xD000..=0xDFFF Work RAM
     // 0xE000..=0xFDFF Mirror RAM
     else if (address < 0xFE00) {
-        if (!bus->work_ram) {
-            if (!debug_peek) {
-                panicf("Attempting to read work RAM at $%04X but it is NULL",
-                       address);
-            }
-            return 0;
-        }
-
         if (!debug_peek && address >= 0xE000) {
             errorf("Attempting to read Mirror RAM at $%04X", address);
         }
 
         // Modulus to "reflect" mirror RAM
-        return ram_read(bus->work_ram, (address - 0xC000) % WORK_RAM_SIZE);
+        return ram_read(&bus->work_ram, (address - 0xC000) % WORK_RAM_SIZE);
     }
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
@@ -102,18 +120,10 @@ u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xFF80..=0xFFFE High RAM
     else if (address < 0xFFFF) {
-        if (!bus->high_ram) {
-            if (!debug_peek) {
-                panicf("Attempting to read high RAM at $%04X but it is NULL",
-                       address);
-            }
-            return 0;
-        }
-
         u16 internal_address = address - 0xFF80;
         assert(internal_address < HIGH_RAM_SIZE);
 
-        return ram_read(bus->high_ram, internal_address);
+        return ram_read(&bus->high_ram, internal_address);
     }
 
     assert(address == 0xFFFF);
@@ -149,17 +159,10 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xA000..=0xBFFF External RAM
     else if (address < 0xC000) {
-        if (!bus->work_ram) {
-            panicf("Attempting to write ExRAM at $%04X but it is NULL",
-                   address);
-            return;
-        }
-
         u16 internal_address = address - 0xA000;
         assert(internal_address < CART_RAM_BANK_SIZE);
 
-        ram_write(bus->work_ram, internal_address, value);
-
+        ram_write(&bus->work_ram, internal_address, value);
         return;
     }
 
@@ -167,18 +170,12 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     // 0xD000..=0xDFFF Work RAM
     // 0xE000..=0xFDFF Mirror RAM
     else if (address < 0xFE00) {
-        if (!bus->work_ram) {
-            panicf("Attempting to write work RAM at $%04X but it is NULL",
-                   address);
-            return;
-        }
-
         if (address >= 0xE000) {
             errorf("Attempting to write Mirror RAM at $%04X", address);
         }
 
         // Modulus to "reflect" mirror RAM
-        ram_write(bus->work_ram, (address - 0xC000) % 0x2000, value);
+        ram_write(&bus->work_ram, (address - 0xC000) % 0x2000, value);
         return;
     }
 
@@ -207,16 +204,10 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xFF80..=0xFFFE High RAM
     else if (address < 0xFFFF) {
-        if (!bus->high_ram) {
-            panicf("Attempting to write high RAM at $%04X but it is NULL",
-                   address);
-            return;
-        }
-
         u16 internal_address = address - 0xFF80;
         assert(internal_address < HIGH_RAM_SIZE);
 
-        ram_write(bus->high_ram, internal_address, value);
+        ram_write(&bus->high_ram, internal_address, value);
         return;
     }
 

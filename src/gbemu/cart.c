@@ -235,11 +235,11 @@ void cart_print_info(const Cartridge *cart, const char *filename) {
 }
 
 const CartHeaderView *cart_header(const Cartridge *cart) {
-    assert(cart && cart->rom);
-    if (cart->rom->size < MIN_CART_SIZE) {
+    assert(cart);
+    if (cart->rom.size < MIN_CART_SIZE) {
         return NULL;
     }
-    return (CartHeaderView *)&cart->rom->data[HEADER_ADDR];
+    return (CartHeaderView *)&cart->rom.data[HEADER_ADDR];
 }
 
 bool cart_is_valid_header(const Cartridge *cart) {
@@ -250,46 +250,93 @@ bool cart_is_valid_header(const Cartridge *cart) {
 
     u16 chk = 0;
     for (u16 addr = 0x0134; addr <= 0x014C; ++addr) {
-        chk = chk - cart->rom->data[addr] - 1;
+        chk = chk - cart->rom.data[addr] - 1;
     }
 
     return (u8)(chk & 0xff) == header->checksum;
 }
 
-void cart_init(Cartridge *cart) { memset(cart, 0, sizeof(Cartridge)); }
+GbemuError cart_mc_init(Cartridge *cart, size_t ram_size) {
+    assert(cart);
 
-Cartridge *cart_alloc_from_file(const char *filename, RomLoadErr *err) {
-    Cartridge *cart;
+    GbemuError err = ram_init(&cart->ram, ram_size);
+    if (err) return err;
 
-    do {
-        // Assume any error is alloc error unless changed by rom_alloc_from_file
-        if (err) *err = ROM_ALLOC_ERR;
+    cart->ram_en = false;
+    cart->bank_sel_lower = 0;
+    cart->bank_sel_upper = 0;
+    cart->bank_mode = 0;
 
-        cart = malloc(sizeof(Cartridge));
-        if (!cart) break;
-        cart_init(cart);
-
-        cart->rom = rom_alloc_from_file(filename, err);
-        if (!cart->rom) break;
-
-        // TODO: Allocate based on header
-        cart->ram = ram_alloc_blank(CART_MBC1_RAM_SIZE);
-        if (!cart->ram) break;
-
-        *err = ROM_OK;
-        return cart;
-    } while (0);
-
-    // Recover from error
-    cart_dealloc(&cart);
-    return NULL;
+    return OK;
 }
 
-void cart_dealloc(Cartridge **cart) {
-    rom_dealloc(&(*cart)->rom);
-    ram_dealloc(&(*cart)->ram);
-    free(*cart);
-    *cart = NULL;
+GbemuError cart_init_none(Cartridge *cart) {
+    assert(cart);
+
+    GbemuError err;
+
+    do {
+        rom_init_none(&cart->rom);
+
+        err = ram_init(&cart->ram, 0);
+        if (err) break;
+
+        cart->ram_en = false;
+        cart->bank_sel_lower = 0;
+        cart->bank_sel_upper = 0;
+        cart->bank_mode = 0;
+
+        return OK;
+    } while (0);
+
+    cart_deinit(cart);
+    return err;
+}
+
+GbemuError cart_init(Cartridge *cart, const char *filename) {
+    assert(cart);
+
+    GbemuError err;
+
+    do {
+        err = rom_init_from_file(&cart->rom, filename);
+        if (err) break;
+
+        // TODO: Set size based on header info
+        err = cart_mc_init(cart, CART_MBC1_RAM_SIZE);
+        if (err) break;
+
+        return OK;
+    } while (0);
+
+    cart_deinit(cart);
+    return err;
+}
+
+GbemuError cart_init_from_buffer(Cartridge *cart, const u8 *buffer,
+                                 size_t size) {
+    assert(cart);
+
+    GbemuError err;
+
+    do {
+        err = rom_init_from_buffer(&cart->rom, buffer, size);
+        if (err) break;
+
+        // TODO: Set size based on header info
+        err = cart_mc_init(cart, CART_MBC1_RAM_SIZE);
+        if (err) break;
+
+        return OK;
+    } while (0);
+
+    cart_deinit(cart);
+    return err;
+}
+
+void cart_deinit(Cartridge *cart) {
+    rom_deinit(&cart->rom);
+    ram_deinit(&cart->ram);
 }
 
 u8 cart_read(const Cartridge *cart, u16 address) {
@@ -308,7 +355,7 @@ u8 cart_read(const Cartridge *cart, u16 address) {
             internal_address =
                 ((cart->bank_sel_upper & 3) << 19) | (address & 0x3FFF);
         }
-        return rom_read(cart->rom, internal_address % cart->rom->size);
+        return rom_read(&cart->rom, internal_address % cart->rom.size);
     }
 
     // ROM Bank 01-7F
@@ -319,7 +366,7 @@ u8 cart_read(const Cartridge *cart, u16 address) {
         internal_address = ((cart->bank_sel_upper & 3) << 19) | (lower5 << 14) |
                            (address & 0x3FFF);
 
-        return rom_read(cart->rom, internal_address % cart->rom->size);
+        return rom_read(&cart->rom, internal_address % cart->rom.size);
     }
 
     // Invalid - this is VRAM space
@@ -337,7 +384,7 @@ u8 cart_read(const Cartridge *cart, u16 address) {
             internal_address =
                 ((cart->bank_sel_upper & 3) << 13) | (address & 0x1FFF);
         }
-        return ram_read(cart->ram, internal_address % cart->ram->size);
+        return ram_read(&cart->ram, internal_address % cart->ram.size);
     }
 
     assert(false);
@@ -382,7 +429,7 @@ void cart_write(Cartridge *cart, u16 address, u8 value) {
                 ((cart->bank_sel_upper & 3) << 13) | (address & 0x1FFF);
         }
 
-        ram_write(cart->ram, internal_address % cart->ram->size, value);
+        ram_write(&cart->ram, internal_address % cart->ram.size, value);
         return;
     }
 
