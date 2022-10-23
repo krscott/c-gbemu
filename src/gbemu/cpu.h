@@ -16,6 +16,8 @@ typedef struct Cpu {
     u16 sp;
 
     bool ime;
+    bool ime_scheduled;
+
     bool halted;
     size_t cycle;
 

@@ -378,6 +378,11 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     assert(cpu);
     if (cpu->halted) return;
 
+    if (cpu->ime_scheduled) {
+        cpu->ime_scheduled = false;
+        cpu->ime = true;
+    }
+
     if (cpu->ucode_step == 0) {
         // Read next opcode
         cpu->opcode = bus_read(bus, cpu->pc++);
@@ -584,7 +589,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->ime = false;
             break;
         case ENABLE_INTERRUPTS:
-            cpu->ime = true;
+            cpu->ime_scheduled = true;
             break;
         default:
             panicf("Unhandled micro-op case: %d", uinst->uop);

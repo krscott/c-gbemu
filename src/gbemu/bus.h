@@ -7,11 +7,10 @@
 
 #define WORK_RAM_SIZE 0x2000
 #define HIGH_RAM_SIZE 0x007F
-#define CART_RAM_BANK_SIZE 0x2000
 
 typedef struct Bus {
     const Rom *boot;
-    const CartRom *cart;
+    Cartridge *cart;
     Ram *cart_ram;
     Ram *work_ram;
     Ram *high_ram;

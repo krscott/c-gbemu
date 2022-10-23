@@ -18,10 +18,10 @@ void ram_dealloc(Ram **ram);
 /// @param ram Must not be NULL
 /// @param address
 /// @return Cart RAM data if address is in bounds, 0 otherwise.
-u8 ram_read(const Ram *ram, u16 address);
+u8 ram_read(const Ram *ram, size_t address);
 
 /// @brief Write data to the given address of the RAM
 /// @param ram Must not be NULL
 /// @param address Must be less than RAM size
 /// @param value
-void ram_write(Ram *ram, u16 address, u8 value);
+void ram_write(Ram *ram, size_t address, u8 value);

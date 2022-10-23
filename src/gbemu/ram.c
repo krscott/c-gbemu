@@ -19,21 +19,18 @@ void ram_dealloc(Ram **ram) {
     *ram = NULL;
 }
 
-u8 ram_read(const Ram *ram, u16 address) {
+u8 ram_read(const Ram *ram, size_t address) {
     assert(ram);
-
-    if (address >= ram->size) {
-        return 0;
-    }
+    assert(address < ram->size);
 
     // infof("RAM $%04X R $%02X", address, ram->data[address]);
-    return ram->data[address];
+    return ram->data[address % ram->size];
 }
 
-void ram_write(Ram *ram, u16 address, u8 value) {
+void ram_write(Ram *ram, size_t address, u8 value) {
     assert(ram);
     assert(address < ram->size);
     // infof("RAM $%04X W $%02X (was $%02X)", address, value,
     //       ram->data[address]);
-    ram->data[address] = value;
+    ram->data[address % ram->size] = value;
 }

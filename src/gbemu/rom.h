@@ -32,4 +32,4 @@ void rom_dealloc(const Rom **rom);
 /// @param rom Must not be NULL
 /// @param address
 /// @return Cart ROM data if address is in bounds, 0 otherwise.
-u8 rom_read(const Rom *rom, u16 address);
+u8 rom_read(const Rom *rom, size_t address);

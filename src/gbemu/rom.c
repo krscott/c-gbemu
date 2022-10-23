@@ -56,12 +56,8 @@ void rom_dealloc(const Rom **rom) {
     *rom = NULL;
 }
 
-u8 rom_read(const Rom *rom, u16 address) {
+u8 rom_read(const Rom *rom, size_t address) {
     assert(rom);
-
-    if (address >= rom->size) {
-        return 0;
-    }
-
-    return rom->data[address];
+    assert(address < rom->size);
+    return rom->data[address % rom->size];
 }

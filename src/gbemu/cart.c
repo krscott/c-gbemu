@@ -1,5 +1,7 @@
 #include "cart.h"
 
+#include <string.h>
+
 #define HEADER_ADDR 0x100
 #define MIN_CART_SIZE (HEADER_ADDR + sizeof(CartHeaderView))
 
@@ -215,7 +217,7 @@ const char *cart_licensee_name(const CartHeaderView *header) {
     return LICENSEE_CODE[code];
 }
 
-void cart_print_info(const CartRom *cart, const char *filename) {
+void cart_print_info(const Cartridge *cart, const char *filename) {
     const CartHeaderView *header = cart_header(cart);
     assert(header);
 
@@ -232,50 +234,157 @@ void cart_print_info(const CartRom *cart, const char *filename) {
            cart_is_valid_header(cart) ? "PASSED" : "FAILED");
 }
 
-const CartRom *cart_alloc_from_file(const char *filename, RomLoadErr *err) {
-    // CartRom and Rom are byte-compatible
-    static_assert(sizeof(CartRom) == sizeof(Rom));
-    const CartRom *cart = (const CartRom *)rom_alloc_from_file(filename, err);
-    if (!cart) return NULL;
-
-    return cart;
-}
-
-void cart_dealloc(const CartRom **cart) {
-    free((CartRom *)*cart);
-    *cart = NULL;
-}
-
-const CartHeaderView *cart_header(const CartRom *cart) {
-    assert(cart);
-    if (cart->size == 0) {
+const CartHeaderView *cart_header(const Cartridge *cart) {
+    assert(cart && cart->rom);
+    if (cart->rom->size < MIN_CART_SIZE) {
         return NULL;
     }
-    assert(cart->size >= MIN_CART_SIZE);
-    return (CartHeaderView *)&cart->data[HEADER_ADDR];
+    return (CartHeaderView *)&cart->rom->data[HEADER_ADDR];
 }
 
-bool cart_is_valid_header(const CartRom *cart) {
+bool cart_is_valid_header(const Cartridge *cart) {
     assert(cart);
-    if (!cart->size) {
-        return false;
-    }
+
+    const CartHeaderView *header = cart_header(cart);
+    if (!header) return false;
 
     u16 chk = 0;
     for (u16 addr = 0x0134; addr <= 0x014C; ++addr) {
-        chk = chk - cart->data[addr] - 1;
+        chk = chk - cart->rom->data[addr] - 1;
     }
-    const CartHeaderView *header = cart_header(cart);
 
     return (u8)(chk & 0xff) == header->checksum;
 }
 
-u8 cart_read(const CartRom *cart, u16 address) {
+void cart_init(Cartridge *cart) { memset(cart, 0, sizeof(Cartridge)); }
+
+Cartridge *cart_alloc_from_file(const char *filename, RomLoadErr *err) {
+    Cartridge *cart;
+
+    do {
+        // Assume any error is alloc error unless changed by rom_alloc_from_file
+        if (err) *err = ROM_ALLOC_ERR;
+
+        cart = malloc(sizeof(Cartridge));
+        if (!cart) break;
+        cart_init(cart);
+
+        cart->rom = rom_alloc_from_file(filename, err);
+        if (!cart->rom) break;
+
+        // TODO: Allocate based on header
+        cart->ram = ram_alloc_blank(CART_MBC1_RAM_SIZE);
+        if (!cart->ram) break;
+
+        *err = ROM_OK;
+        return cart;
+    } while (0);
+
+    // Recover from error
+    cart_dealloc(&cart);
+    return NULL;
+}
+
+void cart_dealloc(Cartridge **cart) {
+    rom_dealloc(&(*cart)->rom);
+    ram_dealloc(&(*cart)->ram);
+    free(*cart);
+    *cart = NULL;
+}
+
+u8 cart_read(const Cartridge *cart, u16 address) {
     assert(cart);
 
-    if (address >= cart->size) {
-        return 0;
+    size_t internal_address;
+
+    // See diagrams: https://gbdev.io/pandocs/MBC1.html
+    // TODO: Other RAM schemes
+
+    // ROM Bank X0
+    if (address < 0x4000) {
+        if (cart->bank_mode == 0) {
+            internal_address = address;
+        } else {
+            internal_address =
+                ((cart->bank_sel_upper & 3) << 19) | (address & 0x3FFF);
+        }
+        return rom_read(cart->rom, internal_address % cart->rom->size);
     }
 
-    return cart->data[address];
+    // ROM Bank 01-7F
+    else if (address < 0x8000) {
+        size_t lower5 = (cart->bank_sel_lower & 0x1F);
+        if (lower5 == 0) lower5 = 1;
+
+        internal_address = ((cart->bank_sel_upper & 3) << 19) | (lower5 << 14) |
+                           (address & 0x3FFF);
+
+        return rom_read(cart->rom, internal_address % cart->rom->size);
+    }
+
+    // Invalid - this is VRAM space
+    else if (address < 0xA000) {
+        // Fallthrough
+    }
+
+    // RAM Bank 00-03
+    else if (address < 0xC000) {
+        if (!cart->ram_en) return 0xFF;
+
+        if (cart->bank_mode == 0) {
+            internal_address = address & 0x1FFF;
+        } else {
+            internal_address =
+                ((cart->bank_sel_upper & 3) << 13) | (address & 0x1FFF);
+        }
+        return ram_read(cart->ram, internal_address % cart->ram->size);
+    }
+
+    assert(false);
+    return 0xFF;
+}
+
+void cart_write(Cartridge *cart, u16 address, u8 value) {
+    assert(cart);
+
+    // RAM Enable
+    if (address < 0x2000) {
+        cart->ram_en = (value & 0xA) == 0xA;
+        return;
+    }
+
+    // Lower ROM Bank Number
+    else if (address < 0x4000) {
+        cart->bank_sel_lower = value & 0x1F;
+        return;
+    }
+
+    // RAM Bank Number / Upper ROM Bank Number
+    else if (address < 0x6000) {
+        cart->bank_sel_upper = value & 3;
+        return;
+    }
+
+    // Invalid - this is VRAM space
+    else if (address < 0xA000) {
+        // Fallthrough
+    }
+
+    // RAM Bank 00-03
+    else if (address < 0xC000) {
+        if (!cart->ram_en) return;
+
+        size_t internal_address;
+        if (cart->bank_mode == 0) {
+            internal_address = address & 0x1FFF;
+        } else {
+            internal_address =
+                ((cart->bank_sel_upper & 3) << 13) | (address & 0x1FFF);
+        }
+
+        ram_write(cart->ram, internal_address % cart->ram->size, value);
+        return;
+    }
+
+    assert(false);
 }

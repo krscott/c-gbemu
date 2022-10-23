@@ -27,7 +27,7 @@ void test_cart(void) {
     if (err) panicf("Error loading cart: %s", filename);
     ASSERT_EQ_U8(err, ROM_OK);
 
-    const CartRom *cart = gb->bus.cart;
+    Cartridge *cart = gb->bus.cart;
     ASSERT(cart);
     ASSERT(cart_is_valid_header(cart));
 
