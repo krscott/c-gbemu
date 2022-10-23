@@ -9,6 +9,8 @@
 #define FH 0x20
 #define FC 0x10
 
+#define chk_z(x) ((x) == 0 ? FZ : 0)
+
 typedef enum InterruptMask {
     INTR_VBLANK_MASK = 0x01,
     INTR_LCD_STAT_MASK = 0x02,
@@ -151,8 +153,6 @@ u8 cpu_get(Cpu *cpu, Target target) {
             panicf("Unhandled load-target case: %d", target);
     }
 }
-
-#define chk_z(x) (x == 0 ? FZ : 0)
 
 void alu(u8 lhs, u8 rhs, bool sub, bool use_carry, u8 *out, u8 *flags) {
     u16 carry = (use_carry && *flags & FC) ? 1 : 0;
