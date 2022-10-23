@@ -271,12 +271,14 @@ void cpu_run_bitshift_op(Cpu *cpu, Target target,
 }
 
 void cpu_run_prefix_op(Cpu *cpu, Target target) {
-    u8 bitmask = 1 << ((cpu->opcode >> 3) & 7);
+    u8 ext_op = cpu_get(cpu, target);
 
-    switch (cpu->opcode >> 6) {
+    u8 bitmask = 1 << ((ext_op >> 3) & 7);
+
+    switch (ext_op >> 6) {
         case 0:
             // Bit-shift ops
-            switch (cpu->opcode >> 3) {
+            switch (ext_op >> 3) {
                 case 0:
                     cpu_run_bitshift_op(cpu, target, bit_rlc);
                     return;

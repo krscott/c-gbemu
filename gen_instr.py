@@ -495,7 +495,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
                 "[CB]",
                 [
                     {},
-                    {"uop": "PREFIX_OP", "io": "READ_PC_INC"}
+                    {"uop": "PREFIX_OP", "lhs": "BUS", "io": "READ_PC_INC"}
                 ]
             )
 
