@@ -527,7 +527,7 @@ const Instruction instructions[0x100] = {
     [0xCB] = {"[CB]", 2,
               {{0},
                {.uop = PREFIX_OP_1, .lhs = BUS, .io = READ_PC_INC},
-               {.uop = LD_R8_R8, .lhs = BUS, .io = READ_HL},
+               {.io = READ_HL},
                {.uop = PREFIX_OP_2, .lhs = BUS, .io = WRITE_HL, .end = true}}},
     [0xCC] = {"CALL Z,u16", 3,
               {{0},
