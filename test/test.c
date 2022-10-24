@@ -25,6 +25,7 @@
 
 const char *blargg_roms[] = {
     "roms/01-special.gb",
+    "roms/03-op sp,hl.gb",
 };
 
 void test_cart(void) {

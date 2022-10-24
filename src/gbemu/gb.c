@@ -43,6 +43,9 @@ GbErr gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
 void gb_boot_dmg(GameBoy *gb) {
     cpu_reset(&gb->cpu);
 
+    gb->debug_serial_message_index = 0;
+    gb->debug_serial_message[0] = '\0';
+
     const CartHeaderView *header = cart_header(&gb->bus.cart);
 
     // If checksum is 0, H and C are both clear. Otherwise, both set.

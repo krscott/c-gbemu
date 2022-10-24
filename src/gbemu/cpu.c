@@ -184,16 +184,13 @@ void cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
     cpu_set(cpu, lhs, lhs_val);
 }
 
-void alu_u16_plus_i8(u16 lhs16, u8 rhs_lo, u16 *out, u8 *flags) {
-    u8 lhs_lo = low_byte(lhs16);
-    u8 lhs_hi = high_byte(lhs16);
-    // Extend sign bit
-    u8 rhs_hi = rhs_lo & 0x80 ? 0xFF : 0;
-    u8 res_lo, res_hi;
-    alu_add(lhs_lo, rhs_lo, (*flags & FC) != 0, &res_lo, flags);
-    alu_add(lhs_hi, rhs_hi, (*flags & FC) != 0, &res_hi, flags);
-    *out = to_u16(res_hi, res_lo);
-    *flags &= ~(FZ | FN);
+void alu_add_u16_i8(u16 lhs16, u8 rhs, u16 *out, u8 *flags) {
+    u16 rhs16 = (i16)((i8)rhs);
+    *out = lhs16 + rhs16;
+
+    u8 h = (lhs16 & 0xF) + (rhs16 & 0xF) > 0xF ? FH : 0;
+    u8 c = (lhs16 & 0xFF) + (rhs16 & 0xFF) > 0xFF ? FC : 0;
+    *flags = h | c;
 }
 
 void alu_inc(u8 lhs, u8 *out, u8 *flags) {
@@ -586,14 +583,14 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case ADD16_SP_I8:
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
-            alu_u16_plus_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &cpu->sp,
-                            &cpu->f);
+            alu_add_u16_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &cpu->sp,
+                           &cpu->f);
             break;
         case ADD16_HL_SP_PLUS_I8: {
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
             u16 hl;
-            alu_u16_plus_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &hl, &cpu->f);
+            alu_add_u16_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &hl, &cpu->f);
             split_u16(hl, &cpu->h, &cpu->l);
             break;
         }
