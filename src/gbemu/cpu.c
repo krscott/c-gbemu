@@ -352,7 +352,9 @@ void daa(u8 *value, u8 *flags) {
     } else {
         // After addition, adjust if carry/half-carry occurred, or if value
         // is out of bounds
-        if (*flags & FC || *value > 0x99) {
+
+        // Implementations vary on if this should be 0x99 or 0x9F
+        if (*flags & FC || *value > 0x9F) {
             *value += 0x60;
             *flags |= FC;
         }
