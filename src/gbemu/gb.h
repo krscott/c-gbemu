@@ -9,11 +9,17 @@
 typedef struct GameBoy {
     Cpu cpu;
     Bus bus;
+
     bool trace_cpu_en;
 
     /// @brief Flag indicating if user closed UI to tell emu thread to shutdown.
     /// Does not impact emulation itself.
     bool shutdown;
+
+    /// @brief Index into debug_serial_message.
+    u16 debug_serial_message_index;
+    /// @brief Record of transmitted serial data ASCII characters.
+    char debug_serial_message[0x100];
 } GameBoy;
 
 GbErr gb_init(GameBoy *gb) nodiscard;

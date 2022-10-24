@@ -23,6 +23,8 @@ GbErr bus_init(Bus *bus) {
         err = ram_init(&bus->high_ram, HIGH_RAM_SIZE);
         if (err) break;
 
+        bus->reg_sb = 0;
+        bus->reg_sc = 0;
         bus->reg_if = 0;
         bus->reg_ie = 0;
         bus->is_bootrom_disabled = false;
@@ -71,7 +73,7 @@ u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0x8000..=0x9FFF VRAM
     else if (address < 0xA000) {
-        if (!debug_peek) errorf("TODO: VRAM $%04X", address);
+        // if (!debug_peek) errorf("TODO: VRAM $%04X", address);
         return 0;
     }
 
@@ -97,7 +99,7 @@ u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
-        if (!debug_peek) errorf("TODO: OAM $%04X", address);
+        // if (!debug_peek) errorf("TODO: OAM $%04X", address);
         return 0;
     }
 
@@ -110,10 +112,14 @@ u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
     // 0xFF00..=0xFF7F I/O Registers
     else if (address < 0xFF80) {
         switch (address) {
-            case 0xFF0F:  // Interrupt Flag
+            case 0xFF01:
+                return bus->reg_sb;
+            case 0xFF02:
+                return bus->reg_sc;
+            case 0xFF0F:
                 return bus->reg_if;
         }
-        if (!debug_peek) errorf("TODO: I/O $%04X", address);
+        // if (!debug_peek) errorf("TODO: I/O $%04X", address);
         return 0;
     }
 
@@ -152,7 +158,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0x8000..=0x9FFF VRAM
     else if (address < 0xA000) {
-        errorf("TODO: VRAM $%04X", address);
+        // errorf("TODO: VRAM $%04X", address);
         return;
     }
 
@@ -180,7 +186,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
-        errorf("TODO: OAM $%04X", address);
+        // errorf("TODO: OAM $%04X", address);
         return;
     }
 
@@ -193,11 +199,17 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     // 0xFF00..=0xFF7F I/O Registers
     else if (address < 0xFF80) {
         switch (address) {
-            case 0xFF0F:  // Interrupt Flag
+            case 0xFF01:
+                bus->reg_sb = value;
+                return;
+            case 0xFF02:
+                bus->reg_sc = value;
+                return;
+            case 0xFF0F:
                 bus->reg_if = value & 0x1F;
                 return;
         }
-        errorf("TODO: I/O $%04X", address);
+        // errorf("TODO: I/O $%04X", address);
         return;
     }
 
@@ -212,4 +224,21 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     assert(address == 0xFFFF);
     bus->reg_ie = value;
+}
+
+bool bus_is_serial_transfer_requested(Bus *bus) {
+    return (bus->reg_sc & 0x80) != 0;
+}
+
+u8 bus_take_serial_byte(Bus *bus) {
+    assert(bus_is_serial_transfer_requested(bus));
+
+    // Clear transfer flag
+    bus->reg_sc &= ~0x80;
+
+    // Set serial interrupt request
+    bus->reg_if |= INTR_SERIAL_MASK;
+
+    // Return transfered data
+    return bus->reg_sb;
 }

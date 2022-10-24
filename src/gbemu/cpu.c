@@ -11,14 +11,6 @@
 
 #define chk_z(x) ((x) == 0 ? FZ : 0)
 
-typedef enum InterruptMask {
-    INTR_VBLANK_MASK = 0x01,
-    INTR_LCD_STAT_MASK = 0x02,
-    INTR_TIMER_MASK = 0x04,
-    INTR_SERIAL_MASK = 0x08,
-    INTR_JOYPAD_MASK = 0x10,
-} InterruptMask;
-
 typedef enum InterruptAddr {
     INTR_VBLANK_ADDR = 0x40,
     INTR_LCD_STAT_ADDR = 0x48,

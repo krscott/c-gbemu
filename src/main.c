@@ -13,7 +13,6 @@ void *emu_thread() {
     while (!shutdown) {
         pthread_mutex_lock(&gb_mutex);
 
-        if (!gb.cpu.halted) cpu_print_trace(&gb.cpu, &gb.bus);
         gb_step(&gb);
         shutdown = gb.shutdown;
 
@@ -35,6 +34,8 @@ int main(int argc, char *args[]) {
     }
 
     err_exit(gb_init(&gb));
+
+    // gb.trace_cpu_en = true;
 
     err_exit(gb_load_rom_file(&gb, filename));
     cart_print_info(&gb.bus.cart, filename);
