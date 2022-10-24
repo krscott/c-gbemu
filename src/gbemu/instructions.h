@@ -109,4 +109,5 @@ typedef struct Instruction {
 const MicroInstr* instructions_get_uinst(u8 opcode, u8 ustep);
 
 const char* instructions_get_mnemonic(u8 opcode);
+const char* instructions_get_prefix_mnemonic(u8 arg);
 u8 instructions_get_length(u8 opcode);

@@ -598,15 +598,47 @@ for op in range(0x100):
 
 
 print("""};
+
+const char *prefix_mnemonics[0x100] = {""", file=dest_file)
+
+for op in range(0x100):
+    reg = R8_TARGETS_STR[op & 7]
+    bit = (op >> 3) & 7
+    shiftop = ["RLC", "RRC", "RL", "RR", "SLA", "SRA", "SWAP", "SRL"][bit]
+
+    if op < 0x40:
+        s = f"{shiftop} {reg}"
+    elif op < 0x80:
+        s = f"BIT {bit},{reg}"
+    elif op < 0xC0:
+        s = f"RES {bit},{reg}"
+    else:
+        s = f"SET {bit},{reg}"
+
+    if op & 3 == 0:
+        print("    ", file=dest_file, end="")
+
+    print(f"\"{s}\",".ljust(14), file=dest_file, end="")
+
+    if op & 3 == 3:
+        print("", file=dest_file)
+
+
+print("""
+};
 // clang-format on
 
-const MicroInstr *instructions_get_uinst(u8 opcode, u8 ustep) {
+const MicroInstr* instructions_get_uinst(u8 opcode, u8 ustep) {
     assert(ustep < MICRO_INSTRUCTION_SIZE);
     return &instructions[opcode].micro_instructions[ustep];
 }
 
 const char* instructions_get_mnemonic(u8 opcode) {
     return instructions[opcode].mnemonic;
+}
+
+const char* instructions_get_prefix_mnemonic(u8 arg) {
+    return prefix_mnemonics[arg];
 }
 
 u8 instructions_get_length(u8 opcode) { return instructions[opcode].length; }""", file=dest_file)

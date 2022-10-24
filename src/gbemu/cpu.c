@@ -755,6 +755,11 @@ void cpu_print_trace(Cpu *cpu, Bus *bus) {
 
         if (len > 1) {
             u8 pc1 = bus_debug_peek(bus, cpu->pc + 1);
+
+            if (pc0 == 0xCB) {
+                mnemonic = instructions_get_prefix_mnemonic(pc1);
+            }
+
             printf(" %02X", pc1);
         } else {
             printf("   ");
