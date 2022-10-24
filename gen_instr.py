@@ -423,7 +423,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
 
         # JP cond,u16 / JP u16
         if op in (0xC2, 0xC3, 0xCA, 0xD2, 0xDA):
-            i = (op >> 4) & 3
+            i = (op >> 3) & 3
             cond = "COND_ALWAYS" if op == 0xC3 else COND[i]
             cond_str = "" if op == 0xC3 else f"{COND_STR[i]},"
             return (
@@ -511,7 +511,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
 
         # CALL cond,u16 / CALL u16
         if op in (0xC4, 0xCC, 0xCD, 0xD4, 0xDC):
-            i = (op >> 4) & 3
+            i = (op >> 3) & 3
             cond = "COND_ALWAYS" if op == 0xCD else COND[i]
             cond_str = "" if op == 0xCD else f"{COND_STR[i]},"
             return (
