@@ -28,6 +28,7 @@ typedef struct Cpu {
 
     u8 opcode;
     u8 ucode_step;
+    u8 prefix_opcode;
 } Cpu;
 
 u16 to_u16(u8 hi, u8 lo);
@@ -37,7 +38,6 @@ u16 cpu_de(Cpu *cpu);
 u16 cpu_hl(Cpu *cpu);
 
 void cpu_reset(Cpu *cpu);
-void cpu_reset_boot_dmg(Cpu *cpu);
 
 void cpu_cycle(Cpu *cpu, Bus *bus);
 

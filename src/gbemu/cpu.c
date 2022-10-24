@@ -262,7 +262,9 @@ void bit_sra(u8 *value, u8 *flags) {
 
 void bit_srl(u8 *value, u8 *flags) {
     bool new_carry = *value & 1;
-    *value = *value >> 1;
+    // Logical shift: sign bit is removed
+    *value >>= 1;
+    assert((*value & 0x80) == 0);
     *flags = chk_z(*value) | (new_carry ? FC : 0);
 }
 
@@ -278,15 +280,36 @@ void cpu_run_bitshift_op(Cpu *cpu, Target target,
     cpu_set(cpu, target, value);
 }
 
-void cpu_run_prefix_op(Cpu *cpu, Target target) {
-    u8 ext_op = cpu_get(cpu, target);
+Target get_prefix_op_target(u8 prefix_op) {
+    switch (prefix_op & 7) {
+        case 0:
+            return B;
+        case 1:
+            return C;
+        case 2:
+            return D;
+        case 3:
+            return E;
+        case 4:
+            return H;
+        case 5:
+            return L;
+        case 6:
+            return BUS;
+        case 7:
+            return A;
+    }
+    assert(0);
+    return TARGET_NONE;
+}
 
-    u8 bitmask = 1 << ((ext_op >> 3) & 7);
+void cpu_run_prefix_op(Cpu *cpu, u8 prefix_op, Target target) {
+    u8 bitmask = 1 << ((prefix_op >> 3) & 7);
 
-    switch (ext_op >> 6) {
+    switch (prefix_op >> 6) {
         case 0:
             // Bit-shift ops
-            switch (ext_op >> 3) {
+            switch (prefix_op >> 3) {
                 case 0:
                     cpu_run_bitshift_op(cpu, target, bit_rlc);
                     return;
@@ -393,21 +416,6 @@ void cpu_reset(Cpu *cpu) {
     cpu->ime = true;
 }
 
-void cpu_reset_boot_dmg(Cpu *cpu) {
-    cpu_reset(cpu);
-
-    cpu->a = 0x01;
-    cpu->f = FZ;
-    cpu->b = 0x00;
-    cpu->c = 0x13;
-    cpu->d = 0x00;
-    cpu->e = 0xD8;
-    cpu->h = 0x01;
-    cpu->l = 0x4D;
-    cpu->pc = 0x0100;
-    cpu->sp = 0xFFFE;
-}
-
 void cpu_cycle(Cpu *cpu, Bus *bus) {
     assert(cpu);
 
@@ -464,6 +472,10 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         cpu->is_jp_interrupt
             ? &interrupt_call_instruction[cpu->ucode_step]
             : instructions_get_uinst(cpu->opcode, cpu->ucode_step);
+
+    // Flag for if this is the last micro-instruction.
+    // (Can be overridden by 0xCB)
+    bool is_end = uinst->end;
 
     if (uinst->undefined) {
         panicf("Executing undefined instr: $%02X (step %d)", cpu->opcode,
@@ -635,9 +647,32 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case RRA:
             cpu_run_bitshift_op(cpu, A, bit_rr);
             break;
-        case PREFIX_OP:
-            cpu_run_prefix_op(cpu, uinst->lhs);
+        case PREFIX_OP_1: {
+            // Register r8 Prefix Op
+            // Asserts for only supported use-cases
+
+            assert(uinst->lhs == BUS);
+            cpu->prefix_opcode = cpu_get(cpu, uinst->lhs);
+
+            Target prefix_target = get_prefix_op_target(cpu->prefix_opcode);
+
+            if (prefix_target != BUS) {
+                cpu_run_prefix_op(cpu, cpu->prefix_opcode, prefix_target);
+                is_end = true;
+            }
             break;
+        }
+        case PREFIX_OP_2: {
+            // Memory (HL) Prefix Op
+            // Asserts for only supported use-cases
+
+            assert(uinst->lhs == BUS);
+            Target prefix_target = get_prefix_op_target(cpu->prefix_opcode);
+            assert(prefix_target == BUS);
+            cpu_run_prefix_op(cpu, cpu->prefix_opcode, prefix_target);
+            assert(uinst->io == WRITE_HL);
+            break;
+        }
         case DAA:
             daa(&cpu->a, &cpu->f);
             break;
@@ -707,7 +742,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 
     // Section 4 - Counters/Conditions
 
-    if (uinst->end) {
+    if (is_end) {
         cpu->ucode_step = 0;
     } else {
         ++cpu->ucode_step;

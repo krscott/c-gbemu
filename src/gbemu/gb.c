@@ -41,7 +41,24 @@ GbErr gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
 }
 
 void gb_boot_dmg(GameBoy *gb) {
-    cpu_reset_boot_dmg(&gb->cpu);
+    cpu_reset(&gb->cpu);
+
+    const CartHeaderView *header = cart_header(&gb->bus.cart);
+
+    // If checksum is 0, H and C are both clear. Otherwise, both set.
+    // (Z is always set)
+    gb->cpu.f = header->checksum == 0 ? 0x80 : 0xB0;
+
+    gb->cpu.a = 0x01;
+    gb->cpu.b = 0x00;
+    gb->cpu.c = 0x13;
+    gb->cpu.d = 0x00;
+    gb->cpu.e = 0xD8;
+    gb->cpu.h = 0x01;
+    gb->cpu.l = 0x4D;
+    gb->cpu.pc = 0x0100;
+    gb->cpu.sp = 0xFFFE;
+
     gb->bus.is_bootrom_disabled = true;
 }
 

@@ -12,7 +12,7 @@
 
 // https://gbdev.io/pandocs/The_Cartridge_Header.html
 
-typedef struct {
+typedef struct CartHeaderView {
     const u8 entry[4];
     const u8 logo[0x30];
     const char title[16];
