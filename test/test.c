@@ -68,18 +68,18 @@ void test_cpu_jp(void) {
     err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
     // Read opcode
-    gb_step(&gb);
+    cpu_cycle(&gb.cpu, &gb.bus);
     ASSERT_EQ_U8(gb.cpu.opcode, 0xC3);
     ASSERT_EQ_U8(gb.cpu.cycle, 1);
     ASSERT_EQ_U8(gb.cpu.pc, 1);
 
     // Read address
-    gb_step(&gb);
-    gb_step(&gb);
+    cpu_cycle(&gb.cpu, &gb.bus);
+    cpu_cycle(&gb.cpu, &gb.bus);
     ASSERT_EQ_U8(gb.cpu.pc, 3);
 
     // Jump
-    gb_step(&gb);
+    cpu_cycle(&gb.cpu, &gb.bus);
     ASSERT_EQ_U8(gb.cpu.pc, 0xBBAA);
 }
 
@@ -258,10 +258,10 @@ void test_interrupt(void) {
 
     // Interrupt call is 3 cycles, then check that PC is
     // LCD_STAT -> INT $48
-    gb_step(&gb);
-    gb_step(&gb);
+    cpu_cycle(&gb.cpu, &gb.bus);
+    cpu_cycle(&gb.cpu, &gb.bus);
     ASSERT(gb.cpu.pc != 0x0048);
-    gb_step(&gb);
+    cpu_cycle(&gb.cpu, &gb.bus);
     ASSERT_EQ_U8(gb.cpu.pc, 0x0048);
 }
 
