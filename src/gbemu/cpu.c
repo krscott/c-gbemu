@@ -773,9 +773,15 @@ void cpu_print_trace(Cpu *cpu, Bus *bus) {
 
         printf(
             " ; %-14s| A:%02X F:%c%c%c%c BC:%02X%02X DE:%02X%02X HL:%02X%02X "
-            "SP:%04X\n",
+            "SP:%04X",
             mnemonic, cpu->a, z, n, h, c, cpu->b, cpu->c, cpu->d, cpu->e,
             cpu->h, cpu->l, cpu->sp);
+
+        if (cpu->halted) {
+            printf(" HALT");
+        }
+
+        printf("\n");
     }
 }
 

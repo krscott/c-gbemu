@@ -12,6 +12,7 @@ GbErr gb_init(GameBoy *gb) {
         if (err) break;
 
         gb->trace_cpu_en = false;
+        gb->shutdown = false;
 
         return OK;
     } while (0);
@@ -39,7 +40,11 @@ void gb_boot_dmg(GameBoy *gb) {
     gb->bus.is_bootrom_disabled = true;
 }
 
-void gb_cycle(GameBoy *gb) { cpu_cycle(&gb->cpu, &gb->bus); }
+void gb_step(GameBoy *gb) {
+    do {
+        cpu_cycle(&gb->cpu, &gb->bus);
+    } while (gb->cpu.ucode_step != 0);
+}
 
 void gb_run_until_halt(GameBoy *gb) {
     gb->cpu.halted = false;

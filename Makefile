@@ -14,7 +14,7 @@ cflags.release := -O3
 WARNINGS := -Wall -Wextra -Wjump-misses-init -Wswitch-enum -Wpedantic
 
 CFLAGS := $(WARNINGS) -Werror -std=c17 ${cflags.${BUILD}}
-LFLAGS := -Iinclude -Isrc -lmingw32 -lSDL2main -lSDL2
+LFLAGS := -Iinclude -Isrc -lmingw32 -lSDL2main -lSDL2 -lSDL2_ttf
 
 # Get all .c files
 SRCS := $(shell find $(SRC_DIR) -name '*.c')

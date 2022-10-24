@@ -10,6 +10,10 @@ typedef struct GameBoy {
     Cpu cpu;
     Bus bus;
     bool trace_cpu_en;
+
+    /// @brief Flag indicating if user closed UI to tell emu thread to shutdown.
+    /// Does not impact emulation itself.
+    bool shutdown;
 } GameBoy;
 
 GbErr gb_init(GameBoy *gb) nodiscard;
@@ -20,5 +24,5 @@ GbErr gb_load_rom_buffer(GameBoy *gb, const u8 *buffer, size_t size) nodiscard;
 GbErr gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer,
                              size_t size) nodiscard;
 void gb_boot_dmg(GameBoy *gb);
-void gb_cycle(GameBoy *gb);
+void gb_step(GameBoy *gb);
 void gb_run_until_halt(GameBoy *gb);

@@ -1,51 +1,25 @@
 
 #include <SDL2/SDL.h>
+#include <pthread.h>
 #include <stdio.h>
 
-#include "gbemu/gb.h"
+#include "gbemu/ui.h"
 
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+GameBoy gb;
+pthread_mutex_t gb_mutex;
 
-void window(void) {
-    // The window we'll be rendering to
-    SDL_Window *window = NULL;
+void *emu_thread() {
+    bool shutdown = false;
+    while (!shutdown) {
+        pthread_mutex_lock(&gb_mutex);
 
-    // The surface contained by the window
-    SDL_Surface *screenSurface = NULL;
+        if (!gb.cpu.halted) cpu_print_trace(&gb.cpu, &gb.bus);
+        gb_step(&gb);
+        shutdown = gb.shutdown;
 
-    // Initialize SDL
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-    } else {
-        // Create window
-        window = SDL_CreateWindow("SDL Test", SDL_WINDOWPOS_UNDEFINED,
-                                  SDL_WINDOWPOS_UNDEFINED, SCREEN_WIDTH,
-                                  SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-        if (window == NULL) {
-            printf("Window could not be created! SDL_Error: %s\n",
-                   SDL_GetError());
-        } else {
-            // Get window surface
-            screenSurface = SDL_GetWindowSurface(window);
-
-            // Fill the surface pink
-            SDL_FillRect(screenSurface, NULL,
-                         SDL_MapRGB(screenSurface->format, 0xFF, 0x00, 0xFF));
-
-            // Update the surface
-            SDL_UpdateWindowSurface(window);
-
-            // Wait two seconds
-            SDL_Delay(2000);
-        }
+        pthread_mutex_unlock(&gb_mutex);
     }
-
-    // Destroy window
-    SDL_DestroyWindow(window);
-
-    // Quit SDL subsystems
-    SDL_Quit();
+    return NULL;
 }
 
 int main(int argc, char *args[]) {
@@ -60,7 +34,6 @@ int main(int argc, char *args[]) {
         return 1;
     }
 
-    GameBoy gb defer(gb_deinit);
     err_exit(gb_init(&gb));
 
     err_exit(gb_load_rom_file(&gb, filename));
@@ -71,9 +44,34 @@ int main(int argc, char *args[]) {
     }
 
     gb_boot_dmg(&gb);
-    gb_run_until_halt(&gb);
 
-    // window();
+    int ui_err = 0;
 
-    return 0;
+    // Start threads and wait for exit
+    {
+        pthread_t emu_thread_handle;
+
+        // Start emu thread
+        int thread_err =
+            pthread_create(&emu_thread_handle, NULL, emu_thread, NULL);
+        if (thread_err) panicf("Emu thread error %d", thread_err);
+
+        // Run UI main function
+        ui_err = ui_main(&gb_mutex, &gb);
+
+        // When UI exits, tell gameboy to shutdown
+        pthread_mutex_lock(&gb_mutex);
+        gb.shutdown = true;
+        pthread_mutex_unlock(&gb_mutex);
+
+        // Wait for emu thread to exit
+        pthread_join(emu_thread_handle, NULL);
+    }
+
+    printf("Final CPU State:\n");
+    cpu_print_trace(&gb.cpu, &gb.bus);
+    printf("\n");
+
+    gb_deinit(&gb);
+    return ui_err;
 }
