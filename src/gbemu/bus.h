@@ -22,15 +22,24 @@ typedef struct Bus {
     Ram work_ram;
     Ram high_ram;
 
-    /// @brief Serial transfer data
+    /// @brief Serial transfer data (0xFF01)
     u8 reg_sb;
-    /// @brief Serial transfer control
+    /// @brief Serial transfer control (0xFF02)
     u8 reg_sc;
-    /// @brief Interrupt flags
+    /// @brief Divider register (0xFF04)
+    u8 reg_div;
+    /// @brief Timer counter (0xFF05)
+    u8 reg_tima;
+    /// @brief Timer modulo (0xFF06)
+    u8 reg_tma;
+    /// @brief Timer control (0xFF07)
+    u8 reg_tac;
+    /// @brief Interrupt flags (0xFF0F)
     u8 reg_if;
-    /// @brief Interrupt enables
+    /// @brief Interrupt enables (0xFFFF)
     u8 reg_ie;
 
+    u16 clocks;
     bool is_bootrom_disabled;
 } Bus;
 
@@ -59,3 +68,7 @@ void bus_write(Bus *bus, u16 address, u8 value);
 
 bool bus_is_serial_transfer_requested(Bus *bus);
 u8 bus_take_serial_byte(Bus *bus);
+
+/// @brief Advance clock by 4 and update timers.
+/// @param bus
+void bus_cycle(Bus *bus);

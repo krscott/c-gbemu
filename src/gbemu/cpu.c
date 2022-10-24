@@ -734,6 +734,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     }
 
     ++cpu->cycle;
+    bus_cycle(bus);
 
     // Should never write to lower nibble of F
     assert((cpu->f & 0x0F) == 0);

@@ -71,7 +71,7 @@ int main(int argc, char *args[]) {
 
     printf("Final CPU State:\n");
     cpu_print_trace(&gb.cpu, &gb.bus);
-    printf("\n");
+    printf("SB> %s\n", gb.debug_serial_message);
 
     gb_deinit(&gb);
     return ui_err;

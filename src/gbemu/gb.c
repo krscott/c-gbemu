@@ -59,14 +59,17 @@ void gb_step(GameBoy *gb) {
             if (c) {
                 if (c == '\n') {
                     // Add null-terminator
-                    gb->debug_serial_message[gb->debug_serial_message_index] = 0;
+                    gb->debug_serial_message[gb->debug_serial_message_index] =
+                        '\0';
                     // Print message
                     printf("SB> %s\n", gb->debug_serial_message);
                     // Reset index
                     gb->debug_serial_message_index = 0;
+                    gb->debug_serial_message[0] = '\0';
                 } else {
                     // Log character
-                    gb->debug_serial_message[gb->debug_serial_message_index++] = c;
+                    gb->debug_serial_message[gb->debug_serial_message_index++] =
+                        c;
                     gb->debug_serial_message_index %=
                         sizeof(gb->debug_serial_message) - 1;
                 }
