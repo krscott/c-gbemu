@@ -35,7 +35,7 @@ int main(int argc, char *args[]) {
 
     err_exit(gb_init(&gb));
 
-    gb.trace_cpu_en = true;
+    // gb.trace_cpu_en = true;
 
     err_exit(gb_load_rom_file(&gb, filename));
     // cart_print_info(&gb.bus.cart, filename);

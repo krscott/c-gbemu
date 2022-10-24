@@ -146,28 +146,41 @@ u8 cpu_get(Cpu *cpu, Target target) {
     }
 }
 
-void alu(u8 lhs, u8 rhs, bool sub, bool use_carry, u8 *out, u8 *flags) {
-    u16 carry = (use_carry && *flags & FC) ? 1 : 0;
+void alu_add(u8 lhs, u8 rhs, u8 carry, u8 *out, u8 *flags) {
+    carry = carry ? 1 : 0;
 
-    if (sub) {
-        carry = !carry;
-        rhs = ~rhs;
-    }
+    u8 res = lhs + rhs + carry;
 
-    u16 res16 = (u16)lhs + (u16)rhs + carry;
-    u8 res8 = (u8)(res16 & 0xFF);
+    u8 z = chk_z(res);
+    u8 h = ((lhs & 0xf) + (rhs & 0xf) + carry) > 0xf ? FH : 0;
+    u8 c = (u16)res < (u16)rhs + (u16)carry ? FC : 0;
 
-    u8 res_h = (lhs & 0xF) + (rhs & 0xF) + (u8)carry;
+    *flags = z | h | c;
+    *out = res;
+}
 
-    *out = res8;
-    *flags = ((res8 == 0 ? FZ : 0) | (sub ? FN : 0) | (res_h > 0x0F ? FH : 0) |
-              (res16 > 0xFF ? FC : 0));
+void alu_sub(u8 lhs, u8 rhs, u8 borrow, u8 *out, u8 *flags) {
+    borrow = borrow ? 1 : 0;
+
+    u8 res = lhs - rhs - borrow;
+
+    u8 z = chk_z(res);
+    u8 h = (((lhs & 0xf) - (rhs & 0xf) - borrow) & 0x10) != 0 ? FH : 0;
+    u8 c = (u16)lhs < (u16)rhs + (u16)borrow ? FC : 0;
+
+    *flags = z | FN | h | c;
+    *out = res;
 }
 
 void cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
     u8 lhs_val = cpu_get(cpu, lhs);
     u8 rhs_val = cpu_get(cpu, rhs);
-    alu(lhs_val, rhs_val, sub, use_carry, &lhs_val, &cpu->f);
+    u8 carry_val = use_carry ? (cpu->f & FC) != 0 : 0;
+    if (sub) {
+        alu_sub(lhs_val, rhs_val, carry_val, &lhs_val, &cpu->f);
+    } else {
+        alu_add(lhs_val, rhs_val, carry_val, &lhs_val, &cpu->f);
+    }
     cpu_set(cpu, lhs, lhs_val);
 }
 
@@ -177,8 +190,8 @@ void alu_u16_plus_i8(u16 lhs16, u8 rhs_lo, u16 *out, u8 *flags) {
     // Extend sign bit
     u8 rhs_hi = rhs_lo & 0x80 ? 0xFF : 0;
     u8 res_lo, res_hi;
-    alu(lhs_lo, rhs_lo, false, false, &res_lo, flags);
-    alu(lhs_hi, rhs_hi, false, true, &res_hi, flags);
+    alu_add(lhs_lo, rhs_lo, (*flags & FC) != 0, &res_lo, flags);
+    alu_add(lhs_hi, rhs_hi, (*flags & FC) != 0, &res_hi, flags);
     *out = to_u16(res_hi, res_lo);
     *flags &= ~(FZ | FN);
 }
@@ -208,11 +221,11 @@ void bitwise_or(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     *flags = chk_z(*out);
 }
 
-void bitwise_cp(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+void alu_cp(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     // Same as SUB r8,r8 but result is ignored
     (void)out;
     u8 dummy;
-    alu(lhs, rhs, true, false, &dummy, flags);
+    alu_sub(lhs, rhs, 0, &dummy, flags);
 }
 
 void cpu_run_bitwise_op(Cpu *cpu, Target lhs, Target rhs,
@@ -616,7 +629,7 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_or);
             break;
         case CP:
-            cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_cp);
+            cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, alu_cp);
             break;
         case HALT:
             cpu->halted = true;
