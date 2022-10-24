@@ -1,4 +1,6 @@
 
+#include <string.h>
+
 #include "../src/gbemu/gb.h"
 
 // Make sure NDEBUG was not set during build step to ensure all asserts are
@@ -19,8 +21,14 @@
     } while (0)
 #define ASSERT_EQ_U8(a, b) ASSERT_EQ((a), (b), "0x%02X")
 
+#define BLARGG_MAX_CYCLES 2000000
+
+const char *blargg_roms[] = {
+    "roms/01-special.gb",
+};
+
 void test_cart(void) {
-    const char *filename = "roms/01-special.gb";
+    const char *filename = blargg_roms[0];
 
     GameBoy gb defer(gb_deinit);
     err_exit(gb_init(&gb));
@@ -184,13 +192,13 @@ void test_cpu_arith(void) {
                      //
         0x3E, 0x01,  // LD A,$01
         0x06, 0x02,  // LD B,$02
-        0x90,        // SUB A,B  ; A: $FF, F: 0100
+        0x90,        // SUB A,B  ; A: $FF, F: 0111
         0x76,        // HALT     ; #4
                      //
-        0x98,        // SBC A,B  ; A: $FD, F: 0111
+        0x98,        // SBC A,B  ; A: $FC, F: 0100
         0x76,        // HALT     ; #5
                      //
-        0x98,        // SBC A,B  ; A: $FA, F: 0111
+        0x98,        // SBC A,B  ; A: $FA, F: 0100
         0x76,        // HALT     ; #6
     };
 
@@ -216,17 +224,17 @@ void test_cpu_arith(void) {
     gb_run_until_halt(&gb);
     // Halt 4
     ASSERT_EQ_U8(gb.cpu.a, 0xFF);
-    ASSERT_EQ_U8(gb.cpu.f, 0x40);
+    ASSERT_EQ_U8(gb.cpu.f, 0x70);
 
     gb_run_until_halt(&gb);
     // Halt 5
-    ASSERT_EQ_U8(gb.cpu.a, 0xFD);
-    ASSERT_EQ_U8(gb.cpu.f, 0x70);
+    ASSERT_EQ_U8(gb.cpu.a, 0xFC);
+    ASSERT_EQ_U8(gb.cpu.f, 0x40);
 
     gb_run_until_halt(&gb);
     // Halt 6
     ASSERT_EQ_U8(gb.cpu.a, 0xFA);
-    ASSERT_EQ_U8(gb.cpu.f, 0x70);
+    ASSERT_EQ_U8(gb.cpu.f, 0x40);
 }
 
 void test_interrupt(void) {
@@ -265,6 +273,40 @@ void test_interrupt(void) {
     ASSERT_EQ_U8(gb.cpu.pc, 0x0048);
 }
 
+void test_blargg(void) {
+    GameBoy gb defer(gb_deinit);
+    err_exit(gb_init(&gb));
+
+    // gb.trace_cpu_en = true;
+
+    for (size_t i = 0; i < array_len(blargg_roms); ++i) {
+        const char *filename = blargg_roms[i];
+
+        err_exit(gb_load_rom_file(&gb, filename));
+
+        if (!cart_is_valid_header(&gb.bus.cart)) {
+            errorf("Invalid ROM header: %s", filename);
+        }
+
+        gb_boot_dmg(&gb);
+
+        for (size_t cycle = 0; cycle < BLARGG_MAX_CYCLES && !gb.cpu.halted;
+             ++cycle) {
+            gb_step(&gb);
+            if (0 == strcmp("Passed\n", gb.debug_serial_message)) {
+                goto test_blarg__next;
+            }
+        }
+
+        panicf("Test ROM failed or timed out: %s", filename);
+
+    test_blarg__next:
+        continue;
+    }
+
+    // cart_print_info(&gb.bus.cart, filename);
+}
+
 int main(void) {
     test_cart();
     test_microcode_is_valid();
@@ -275,6 +317,8 @@ int main(void) {
     test_cpu_hl();
     test_cpu_arith();
     test_interrupt();
+
+    test_blargg();
 
     printf("\nAll tests passed!\n");
 }

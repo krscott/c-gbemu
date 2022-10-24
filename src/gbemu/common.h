@@ -24,3 +24,5 @@ typedef int64_t i64;
 #define defer(func) __attribute__((cleanup(func)))
 
 #define nodiscard __attribute__((warn_unused_result))
+
+#define array_len(arr) (sizeof(arr) / (sizeof(arr[0])))

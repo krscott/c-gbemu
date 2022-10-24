@@ -74,22 +74,30 @@ void gb_step(GameBoy *gb) {
             char c = bus_take_serial_byte(&gb->bus);
 
             if (c) {
-                if (c == '\n') {
-                    // Add null-terminator
-                    gb->debug_serial_message[gb->debug_serial_message_index] =
-                        '\0';
-                    // Print message
-                    printf("SB> %s\n", gb->debug_serial_message);
+                // Make sure we have room for null terminator
+                assert(gb->debug_serial_message_index <
+                       array_len(gb->debug_serial_message) - 1);
+
+                // Add character to message buffer
+                gb->debug_serial_message[gb->debug_serial_message_index++] = c;
+                gb->debug_serial_message[gb->debug_serial_message_index] = '\0';
+
+                // If newline, or buffer is full, then flush buffer
+                if (c == '\n' || gb->debug_serial_message_index ==
+                                     array_len(gb->debug_serial_message) - 1) {
+                    // Skip empty lines
+                    if (gb->debug_serial_message_index > 1) {
+                        // Print message
+                        printf("SB> %s", gb->debug_serial_message);
+                    }
+
                     // Reset index
                     gb->debug_serial_message_index = 0;
-                    gb->debug_serial_message[0] = '\0';
-                } else {
-                    // Log character
-                    gb->debug_serial_message[gb->debug_serial_message_index++] =
-                        c;
-                    gb->debug_serial_message_index %=
-                        sizeof(gb->debug_serial_message) - 1;
                 }
+
+                // Check we didn't violate in-range invariant
+                assert(gb->debug_serial_message_index <
+                       array_len(gb->debug_serial_message) - 1);
             }
         }
     } while (gb->cpu.ucode_step != 0);
