@@ -544,9 +544,13 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         case UOP_NONE:
             break;
         case LD_R8_R8:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_set(cpu, uinst->lhs, cpu_get(cpu, uinst->rhs));
             break;
         case INC16: {
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             u16 x =
                 to_u16(cpu_get(cpu, uinst->lhs), cpu_get(cpu, uinst->rhs)) + 1;
             // Two register sets in the same cycle is probably not technically
@@ -556,6 +560,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         }
         case DEC16: {
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             u16 x =
                 to_u16(cpu_get(cpu, uinst->lhs), cpu_get(cpu, uinst->rhs)) - 1;
             // Two register sets in the same cycle is probably not technically
@@ -565,6 +571,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         }
         case ADD16_LO: {
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             // Preserve state of zero flag
             u8 orig_z = cpu->f & FZ;
             // Add
@@ -573,6 +581,8 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         }
         case ADD16_HI: {
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             // Preserve state of zero flag
             u8 orig_z = cpu->f & FZ;
             // Add with carry
@@ -581,12 +591,14 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         }
         case ADD16_SP_I8:
+            assert(uinst->lhs != TARGET_NONE);
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
             alu_add_u16_i8(cpu->sp, cpu_get(cpu, uinst->lhs), &cpu->sp,
                            &cpu->f);
             break;
         case ADD16_HL_SP_PLUS_I8: {
+            assert(uinst->lhs != TARGET_NONE);
             // Two register sets in the same cycle is probably not technically
             // accurate, but it shouldn't make a difference
             u16 hl;
@@ -595,37 +607,55 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         }
         case INC: {
+            assert(uinst->lhs != TARGET_NONE);
             u8 lhs_val = cpu_get(cpu, uinst->lhs);
             alu_inc(lhs_val, &lhs_val, &cpu->f);
             cpu_set(cpu, uinst->lhs, lhs_val);
         } break;
         case DEC: {
+            assert(uinst->lhs != TARGET_NONE);
             u8 lhs_val = cpu_get(cpu, uinst->lhs);
             alu_dec(lhs_val, &lhs_val, &cpu->f);
             cpu_set(cpu, uinst->lhs, lhs_val);
         } break;
         case ADD:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, false);
             break;
         case ADC:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_alu(cpu, uinst->lhs, uinst->rhs, false, true);
             break;
         case SUB:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, false);
             break;
         case SBC:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_alu(cpu, uinst->lhs, uinst->rhs, true, true);
             break;
         case AND:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_and);
             break;
         case XOR:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_xor);
             break;
         case OR:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, bitwise_or);
             break;
         case CP:
+            assert(uinst->lhs != TARGET_NONE);
+            assert(uinst->rhs != TARGET_NONE);
             cpu_run_bitwise_op(cpu, uinst->lhs, uinst->rhs, alu_cp);
             break;
         case HALT:

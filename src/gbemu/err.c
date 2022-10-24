@@ -1,10 +1,11 @@
 #include "err.h"
 
 #include <assert.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-const char *err_str(GbErr err) {
+const char* err_str(GbErr err) {
     switch (err) {
         case OK:
             // Invalid argument for this function
@@ -25,4 +26,12 @@ void err_exit(GbErr err) {
         fprintf(stderr, "Error: %s\n", err_str(err));
         exit(err);
     }
+}
+
+void breakpoint() {
+#ifdef SIGTRAP
+    raise(SIGTRAP);
+#else
+    __debugbreak();
+#endif
 }

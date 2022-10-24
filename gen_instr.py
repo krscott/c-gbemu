@@ -217,8 +217,8 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
                     label,
                     [
                         {},
-                        {"uop": "LD_R8_R8", "lhs": "BUS", "io": "READ_HL"},
-                        {"uop": uop, "lhs": "BUS", "io": "WRITE_HL"}
+                        {"uop": uop, "lhs": lhs, "io": "READ_HL"},
+                        {"io": "WRITE_HL"}
                     ]
                 )
 
@@ -244,7 +244,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
                     [
                         {},
                         uinst,
-                        {"uop": "LD_R8_R8", "lhs": "BUS", "io": "WRITE_HL"}
+                        {"io": "WRITE_HL"}
                     ]
                 )
 
