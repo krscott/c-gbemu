@@ -184,13 +184,13 @@ void alu_u16_plus_i8(u16 lhs16, u8 rhs_lo, u16 *out, u8 *flags) {
 }
 
 void alu_inc(u8 lhs, u8 *out, u8 *flags) {
-    *out = (u8)((u16)lhs + 1);
-    *flags = chk_z(*out) | (*out & 0xF ? 0 : FH) | (*flags & FC);
+    *out = lhs + 1;
+    *flags = chk_z(*out) | ((lhs & 0xF) == 0xF ? FH : 0) | (*flags & FC);
 }
 
 void alu_dec(u8 lhs, u8 *out, u8 *flags) {
-    *out = lhs == 0 ? ~lhs : lhs - 1;
-    *flags = chk_z(*out) | FN | (*out & 0xF ? FH : 0) | (*flags & FC);
+    *out = lhs - 1;
+    *flags = chk_z(*out) | FN | ((lhs & 0xF) == 0 ? FH : 0) | (*flags & FC);
 }
 
 void bitwise_and(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
@@ -354,7 +354,7 @@ void daa(u8 *value, u8 *flags) {
         // is out of bounds
 
         // Implementations vary on if this should be 0x99 or 0x9F
-        if (*flags & FC || *value > 0x9F) {
+        if (*flags & FC || *value > 0x99) {
             *value += 0x60;
             *flags |= FC;
         }
@@ -776,6 +776,9 @@ void cpu_print_trace(Cpu *cpu, Bus *bus) {
             "SP:%04X",
             mnemonic, cpu->a, z, n, h, c, cpu->b, cpu->c, cpu->d, cpu->e,
             cpu->h, cpu->l, cpu->sp);
+
+        u8 mFF83h = bus_debug_peek(bus, 0xFF83);
+        printf(" 0xFF83:%02X", mFF83h);
 
         if (cpu->halted) {
             printf(" HALT");

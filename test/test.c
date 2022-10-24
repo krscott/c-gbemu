@@ -124,7 +124,7 @@ void test_cpu_ld_xor(void) {
 void test_cpu_inc_dec(void) {
     const u8 prog[] = {
         0x05,  // DEC B ; expect B == 0xFF, F == 0x60
-        0x05,  // DEC B ; expect B == 0xFE, F == 0x60
+        0x05,  // DEC B ; expect B == 0xFE, F == 0x40
         0x04,  // INC B ; expect B == 0xFF, F == 0x00
         0x04,  // INC B ; expect B == 0x00, F == 0xA0
     };
@@ -139,7 +139,7 @@ void test_cpu_inc_dec(void) {
 
     gb_step(&gb);
     ASSERT_EQ_U8(gb.cpu.b, 0xFE);
-    ASSERT_EQ_U8(gb.cpu.f, 0x60);
+    ASSERT_EQ_U8(gb.cpu.f, 0x40);
 
     gb_step(&gb);
     ASSERT_EQ_U8(gb.cpu.b, 0xFF);
