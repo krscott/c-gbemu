@@ -9,19 +9,9 @@
 #error "NDEBUG must not be set for testing"
 #endif
 
-#define ASSERT(cond)                                 \
-    do {                                             \
-        if (!(cond)) panic("Assert failed: " #cond); \
-    } while (0)
-#define ASSERT_EQ(a, b, fmt)                                                   \
-    do {                                                                       \
-        if ((a) != (b))                                                        \
-            panicf("Assert failed: " #a " (" fmt ") == " #b " (" fmt ")", (a), \
-                   (b));                                                       \
-    } while (0)
-#define ASSERT_EQ_U8(a, b) ASSERT_EQ((a), (b), "0x%02X")
-
 #define BLARGG_MAX_CYCLES 10000000
+
+#define assert_eq_u8(a, b) log_assert_eq(a, b, "0x%02X")
 
 const char *blargg_roms[] = {
     "roms/01-special.gb",
@@ -45,12 +35,12 @@ void test_cart(void) {
     err_exit(gb_load_rom_file(&gb, filename));
 
     Cartridge *cart = &gb.bus.cart;
-    ASSERT(cart);
-    ASSERT(cart_is_valid_header(cart));
+    log_assert(cart);
+    log_assert(cart_is_valid_header(cart));
 
     // Peek some arbitrary memory location
-    ASSERT_EQ_U8(cart_read(cart, 0x200), 0x47);
-    ASSERT_EQ_U8(cart_read(cart, 0x210), 0xC3);
+    assert_eq_u8(cart_read(cart, 0x200), 0x47);
+    assert_eq_u8(cart_read(cart, 0x210), 0xC3);
 }
 
 void test_microcode_is_valid(void) {
@@ -87,18 +77,18 @@ void test_cpu_jp(void) {
 
     // Read opcode
     cpu_cycle(&gb.cpu, &gb.bus);
-    ASSERT_EQ_U8(gb.cpu.opcode, 0xC3);
-    ASSERT_EQ_U8(gb.cpu.cycle, 1);
-    ASSERT_EQ_U8(gb.cpu.pc, 1);
+    assert_eq_u8(gb.cpu.opcode, 0xC3);
+    assert_eq_u8(gb.cpu.cycle, 1);
+    assert_eq_u8(gb.cpu.pc, 1);
 
     // Read address
     cpu_cycle(&gb.cpu, &gb.bus);
     cpu_cycle(&gb.cpu, &gb.bus);
-    ASSERT_EQ_U8(gb.cpu.pc, 3);
+    assert_eq_u8(gb.cpu.pc, 3);
 
     // Jump
     cpu_cycle(&gb.cpu, &gb.bus);
-    ASSERT_EQ_U8(gb.cpu.pc, 0xBBAA);
+    assert_eq_u8(gb.cpu.pc, 0xBBAA);
 }
 
 void test_cpu_halt(void) {
@@ -110,9 +100,9 @@ void test_cpu_halt(void) {
     err_exit(gb_init(&gb));
     err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
-    ASSERT(!gb.cpu.halted);
+    log_assert(!gb.cpu.halted);
     gb_step(&gb);
-    ASSERT(gb.cpu.halted);
+    log_assert(gb.cpu.halted);
 }
 
 void test_cpu_ld_xor(void) {
@@ -131,12 +121,12 @@ void test_cpu_ld_xor(void) {
 
     gb_run_until_halt(&gb);
 
-    ASSERT_EQ_U8(gb.cpu.a, 0xA5);
-    ASSERT_EQ_U8(gb.cpu.f, 0x00);
+    assert_eq_u8(gb.cpu.a, 0xA5);
+    assert_eq_u8(gb.cpu.f, 0x00);
 
     gb_run_until_halt(&gb);
-    ASSERT_EQ_U8(gb.cpu.a, 0x00);
-    ASSERT_EQ_U8(gb.cpu.f, 0x80);
+    assert_eq_u8(gb.cpu.a, 0x00);
+    assert_eq_u8(gb.cpu.f, 0x80);
 }
 
 void test_cpu_inc_dec(void) {
@@ -152,20 +142,20 @@ void test_cpu_inc_dec(void) {
     err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
     gb_step(&gb);
-    ASSERT_EQ_U8(gb.cpu.b, 0xFF);
-    ASSERT_EQ_U8(gb.cpu.f, 0x60);
+    assert_eq_u8(gb.cpu.b, 0xFF);
+    assert_eq_u8(gb.cpu.f, 0x60);
 
     gb_step(&gb);
-    ASSERT_EQ_U8(gb.cpu.b, 0xFE);
-    ASSERT_EQ_U8(gb.cpu.f, 0x40);
+    assert_eq_u8(gb.cpu.b, 0xFE);
+    assert_eq_u8(gb.cpu.f, 0x40);
 
     gb_step(&gb);
-    ASSERT_EQ_U8(gb.cpu.b, 0xFF);
-    ASSERT_EQ_U8(gb.cpu.f, 0x00);
+    assert_eq_u8(gb.cpu.b, 0xFF);
+    assert_eq_u8(gb.cpu.f, 0x00);
 
     gb_step(&gb);
-    ASSERT_EQ_U8(gb.cpu.b, 0x00);
-    ASSERT_EQ_U8(gb.cpu.f, 0xA0);
+    assert_eq_u8(gb.cpu.b, 0x00);
+    assert_eq_u8(gb.cpu.f, 0xA0);
 }
 
 void test_cpu_hl(void) {
@@ -182,7 +172,7 @@ void test_cpu_hl(void) {
     err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
     gb_run_until_halt(&gb);
-    ASSERT_EQ_U8(bus_read(&gb.bus, 0xC000), 0x55);
+    assert_eq_u8(bus_read(&gb.bus, 0xC000), 0x55);
 }
 
 void test_cpu_arith(void) {
@@ -218,33 +208,33 @@ void test_cpu_arith(void) {
 
     gb_run_until_halt(&gb);
     // Halt 1
-    ASSERT_EQ_U8(gb.cpu.a, 0x03);
-    ASSERT_EQ_U8(gb.cpu.f, 0x00);
+    assert_eq_u8(gb.cpu.a, 0x03);
+    assert_eq_u8(gb.cpu.f, 0x00);
 
     gb_run_until_halt(&gb);
     // Halt 2
-    ASSERT_EQ_U8(gb.cpu.a, 0x00);
-    ASSERT_EQ_U8(gb.cpu.f, 0xB0);
+    assert_eq_u8(gb.cpu.a, 0x00);
+    assert_eq_u8(gb.cpu.f, 0xB0);
 
     gb_run_until_halt(&gb);
     // Halt 3
-    ASSERT_EQ_U8(gb.cpu.a, 0x02);
-    ASSERT_EQ_U8(gb.cpu.f, 0x00);
+    assert_eq_u8(gb.cpu.a, 0x02);
+    assert_eq_u8(gb.cpu.f, 0x00);
 
     gb_run_until_halt(&gb);
     // Halt 4
-    ASSERT_EQ_U8(gb.cpu.a, 0xFF);
-    ASSERT_EQ_U8(gb.cpu.f, 0x70);
+    assert_eq_u8(gb.cpu.a, 0xFF);
+    assert_eq_u8(gb.cpu.f, 0x70);
 
     gb_run_until_halt(&gb);
     // Halt 5
-    ASSERT_EQ_U8(gb.cpu.a, 0xFC);
-    ASSERT_EQ_U8(gb.cpu.f, 0x40);
+    assert_eq_u8(gb.cpu.a, 0xFC);
+    assert_eq_u8(gb.cpu.f, 0x40);
 
     gb_run_until_halt(&gb);
     // Halt 6
-    ASSERT_EQ_U8(gb.cpu.a, 0xFA);
-    ASSERT_EQ_U8(gb.cpu.f, 0x40);
+    assert_eq_u8(gb.cpu.a, 0xFA);
+    assert_eq_u8(gb.cpu.f, 0x40);
 }
 
 void test_interrupt(void) {
@@ -267,8 +257,8 @@ void test_interrupt(void) {
     err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
     gb_run_until_halt(&gb);
-    ASSERT_EQ_U8(gb.bus.reg_ie, 0x02);
-    ASSERT(gb.cpu.ime);
+    assert_eq_u8(gb.bus.reg_ie, 0x02);
+    log_assert(gb.cpu.ime);
 
     gb.cpu.halted = false;
     // Trigger interrupt
@@ -278,9 +268,9 @@ void test_interrupt(void) {
     // LCD_STAT -> INT $48
     cpu_cycle(&gb.cpu, &gb.bus);
     cpu_cycle(&gb.cpu, &gb.bus);
-    ASSERT(gb.cpu.pc != 0x0048);
+    log_assert(gb.cpu.pc != 0x0048);
     cpu_cycle(&gb.cpu, &gb.bus);
-    ASSERT_EQ_U8(gb.cpu.pc, 0x0048);
+    assert_eq_u8(gb.cpu.pc, 0x0048);
 }
 
 void test_blargg(void) {

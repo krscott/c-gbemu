@@ -27,11 +27,3 @@ void err_exit(GbErr err) {
         exit(err);
     }
 }
-
-void breakpoint() {
-#ifdef SIGTRAP
-    raise(SIGTRAP);
-#else
-    __debugbreak();
-#endif
-}
