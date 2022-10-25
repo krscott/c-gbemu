@@ -277,8 +277,6 @@ static void test_blargg(void) {
     GameBoy gb defer(gb_deinit);
     err_exit(gb_init(&gb));
 
-    // gb.trace_cpu_en = true;
-
     for (size_t i = 0; i < array_len(blargg_roms); ++i) {
         const char *filename = blargg_roms[i];
 

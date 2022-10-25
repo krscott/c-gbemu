@@ -13,7 +13,6 @@ GbErr gb_init(GameBoy *gb) {
         err = bus_init(&gb->bus);
         if (err) break;
 
-        gb->trace_cpu_en = false;
         gb->shutdown = false;
 
         gb->debug_serial_message_index = 0;
@@ -109,10 +108,6 @@ static void gb_update_serial_message_buffer(GameBoy *gb) {
 void gb_step(GameBoy *gb) {
     assert(gb);
     do {
-        if (gb->trace_cpu_en && !gb->cpu.halted) {
-            cpu_print_trace(&gb->cpu, &gb->bus);
-        }
-
         cpu_cycle(&gb->cpu, &gb->bus);
 
         gb_update_serial_message_buffer(gb);

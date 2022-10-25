@@ -13,9 +13,6 @@ typedef struct GameBoy {
     Cpu cpu;
     Bus bus;
 
-    /// @brief If true, CPU registers are printed before every instruction
-    _Atomic bool trace_cpu_en;
-
     /// @brief Flag indicating if user closed UI to tell emu thread to shutdown.
     /// Does not impact emulation itself.
     _Atomic bool shutdown;

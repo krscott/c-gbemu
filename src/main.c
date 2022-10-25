@@ -130,8 +130,6 @@ int main(int argc, char *argv[]) {
 
     err_exit(gb_init(&gb));
 
-    gb.trace_cpu_en = opts.trace;
-
     err_exit(gb_load_rom_file(&gb, opts.rom_filename));
 
     if (opts.verbose) {
