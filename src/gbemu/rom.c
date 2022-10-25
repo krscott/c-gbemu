@@ -21,10 +21,7 @@ GbErr rom_init_from_buffer(Rom *rom, const u8 *buffer, size_t size) {
     return OK;
 }
 
-void close_file(FILE **fp) {
-    fclose(*fp);
-    *fp = NULL;
-}
+void close_file(FILE **fp) { fclose(*fp); }
 
 GbErr rom_init_from_file(Rom *rom, const char *filename) {
     assert(rom);
@@ -48,6 +45,7 @@ GbErr rom_init_from_file(Rom *rom, const char *filename) {
 }
 
 void rom_init_none(Rom *rom) {
+    assert(rom);
     rom->size = 0;
     rom->data = NULL;
 }

@@ -19,6 +19,9 @@ typedef struct GameBoy {
     /// Does not impact emulation itself.
     _Atomic bool shutdown;
 
+    // Serial message is for debugging Blargg tests.
+    // TODO: Move debug_serial* to separate module
+
     /// @brief Index into debug_serial_message.
     u16 debug_serial_message_index;
     /// @brief Record of transmitted serial data ASCII characters.

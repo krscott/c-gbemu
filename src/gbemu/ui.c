@@ -7,7 +7,8 @@ const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
 
 int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
-    (void)gb_mutex;
+    assert(gb_mutex);
+    assert(gb);
 
     SDL_Window *window;
     SDL_Renderer *renderer;

@@ -73,6 +73,39 @@ void gb_boot_dmg(GameBoy *gb) {
     gb->bus.is_bootrom_disabled = true;
 }
 
+void gb_update_serial_message_buffer(GameBoy *gb) {
+    if (bus_is_serial_transfer_requested(&gb->bus)) {
+        char c = bus_take_serial_byte(&gb->bus);
+
+        if (c) {
+            // Make sure we have room for null terminator
+            assert(gb->debug_serial_message_index <
+                   array_len(gb->debug_serial_message) - 1);
+
+            // Add character to message buffer
+            gb->debug_serial_message[gb->debug_serial_message_index++] = c;
+            gb->debug_serial_message[gb->debug_serial_message_index] = '\0';
+
+            // If newline, or buffer is full, then flush buffer
+            if (c == '\n' || gb->debug_serial_message_index ==
+                                 array_len(gb->debug_serial_message) - 1) {
+                // Skip empty lines
+                if (gb->debug_serial_message_index > 1) {
+                    // Print message
+                    printf("SB> %s", gb->debug_serial_message);
+                }
+
+                // Reset index
+                gb->debug_serial_message_index = 0;
+            }
+
+            // Check we didn't violate in-range invariant
+            assert(gb->debug_serial_message_index <
+                   array_len(gb->debug_serial_message) - 1);
+        }
+    }
+}
+
 void gb_step(GameBoy *gb) {
     assert(gb);
     do {
@@ -82,36 +115,7 @@ void gb_step(GameBoy *gb) {
 
         cpu_cycle(&gb->cpu, &gb->bus);
 
-        if (bus_is_serial_transfer_requested(&gb->bus)) {
-            char c = bus_take_serial_byte(&gb->bus);
-
-            if (c) {
-                // Make sure we have room for null terminator
-                assert(gb->debug_serial_message_index <
-                       array_len(gb->debug_serial_message) - 1);
-
-                // Add character to message buffer
-                gb->debug_serial_message[gb->debug_serial_message_index++] = c;
-                gb->debug_serial_message[gb->debug_serial_message_index] = '\0';
-
-                // If newline, or buffer is full, then flush buffer
-                if (c == '\n' || gb->debug_serial_message_index ==
-                                     array_len(gb->debug_serial_message) - 1) {
-                    // Skip empty lines
-                    if (gb->debug_serial_message_index > 1) {
-                        // Print message
-                        printf("SB> %s", gb->debug_serial_message);
-                    }
-
-                    // Reset index
-                    gb->debug_serial_message_index = 0;
-                }
-
-                // Check we didn't violate in-range invariant
-                assert(gb->debug_serial_message_index <
-                       array_len(gb->debug_serial_message) - 1);
-            }
-        }
+        gb_update_serial_message_buffer(gb);
     } while (gb->cpu.ucode_step != 0);
 }
 
