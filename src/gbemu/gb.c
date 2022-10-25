@@ -26,21 +26,29 @@ GbErr gb_init(GameBoy *gb) {
     return err;
 }
 
-void gb_deinit(GameBoy *gb) { bus_deinit(&gb->bus); }
+void gb_deinit(GameBoy *gb) {
+    assert(gb);
+    bus_deinit(&gb->bus);
+}
 
 GbErr gb_load_rom_file(GameBoy *gb, const char *cart_filename) {
+    assert(gb);
+    assert(cart_filename);
     return bus_load_cart_from_file(&gb->bus, cart_filename);
 }
 
 GbErr gb_load_rom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
+    assert(gb);
     return bus_load_cart_from_buffer(&gb->bus, buffer, size);
 }
 
 GbErr gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer, size_t size) {
+    assert(gb);
     return bus_load_bootrom_from_buffer(&gb->bus, buffer, size);
 }
 
 void gb_boot_dmg(GameBoy *gb) {
+    assert(gb);
     cpu_reset(&gb->cpu);
 
     gb->debug_serial_message_index = 0;
@@ -66,6 +74,7 @@ void gb_boot_dmg(GameBoy *gb) {
 }
 
 void gb_step(GameBoy *gb) {
+    assert(gb);
     do {
         if (gb->trace_cpu_en && !gb->cpu.halted) {
             cpu_print_trace(&gb->cpu, &gb->bus);
@@ -107,6 +116,7 @@ void gb_step(GameBoy *gb) {
 }
 
 void gb_run_until_halt(GameBoy *gb) {
+    assert(gb);
     gb->cpu.halted = false;
     while (!gb->cpu.halted) {
         gb_step(gb);
