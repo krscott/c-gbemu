@@ -16,6 +16,98 @@ typedef enum InterruptMask {
     INTR_JOYPAD_MASK = 0x10,
 } InterruptMask;
 
+typedef enum HighByteAddress {
+    FF_JOY = 0x00,
+    FF_SB = 0x01,
+    FF_SC = 0x02,
+
+    FF_DIV = 0x04,
+    FF_TIMA = 0x05,
+    FF_TMA = 0x06,
+    FF_TAC = 0x07,
+
+    FF_IE = 0x0F,
+    FF_NR10 = 0x10,
+    FF_NR11 = 0x11,
+    FF_NR12 = 0x12,
+    FF_NR13 = 0x13,
+    FF_NR14 = 0x14,
+
+    FF_NR21 = 0x16,
+    FF_NR22 = 0x17,
+    FF_NR23 = 0x18,
+    FF_NR24 = 0x19,
+    FF_NR30 = 0x1A,
+    FF_NR31 = 0x1B,
+    FF_NR32 = 0x1C,
+    FF_NR33 = 0x1D,
+    FF_NR34 = 0x1E,
+
+    FF_NR41 = 0x20,
+    FF_NR42 = 0x21,
+    FF_NR43 = 0x22,
+    FF_NR44 = 0x23,
+    FF_NR50 = 0x24,
+    FF_NR51 = 0x25,
+    FF_NR52 = 0x26,
+
+    FF_WAV_0 = 0x30,
+    FF_WAV_1 = 0x31,
+    FF_WAV_2 = 0x32,
+    FF_WAV_3 = 0x33,
+    FF_WAV_4 = 0x34,
+    FF_WAV_5 = 0x35,
+    FF_WAV_6 = 0x36,
+    FF_WAV_7 = 0x37,
+    FF_WAV_8 = 0x38,
+    FF_WAV_9 = 0x39,
+    FF_WAV_A = 0x3A,
+    FF_WAV_B = 0x3B,
+    FF_WAV_C = 0x3C,
+    FF_WAV_D = 0x3D,
+    FF_WAV_E = 0x3E,
+    FF_WAV_F = 0x3F,
+    FF_LCDC = 0x40,
+    FF_STAT = 0x41,
+    FF_SCY = 0x42,
+    FF_SCX = 0x43,
+    FF_LY = 0x44,
+    FF_LYC = 0x45,
+
+    FF_BGP = 0x47,
+    FF_OBP0 = 0x48,
+    FF_OBP1 = 0x49,
+    FF_WY = 0x4A,
+    FF_WX = 0x4B,
+
+    FF_KEY1 = 0x4D,  // CGB Only
+
+    FF_VBK = 0x4F,  // CGB Only
+    FF_BOOTDIS = 0x50,
+    FF_HDMA1 = 0x51,  // CGB Only
+    FF_HDMA2 = 0x52,  // CGB Only
+    FF_HDMA3 = 0x53,  // CGB Only
+    FF_HDMA4 = 0x54,  // CGB Only
+    FF_HDMA5 = 0x55,  // CGB Only
+    FF_RP = 0x56,     // CGB Only
+
+    FF_BCPS = 0x68,  // CGB Only
+    FF_BCPD = 0x69,  // CGB Only
+    FF_OCPS = 0x6A,  // CGB Only
+    FF_OCPD = 0x6B,  // CGB Only
+    FF_OPRI = 0x6C,  // CGB Only
+
+    FF_SVBK = 0x70,  // CGB Only
+
+    FF_72 = 0x72,     // CGB Only (undocumented)
+    FF_73 = 0x73,     // CGB Only (undocumented)
+    FF_75 = 0x75,     // CGB Only (undocumented)
+    FF_PCM12 = 0x76,  // CGB Only (undocumented)
+    FF_PCM34 = 0x77,  // CGB Only (undocumented)
+
+    FF_IE = 0xFF,
+} HighByteAddress;
+
 typedef struct Bus {
     Rom boot;
     Cartridge cart;
