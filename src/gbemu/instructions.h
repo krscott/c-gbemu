@@ -80,7 +80,8 @@ typedef enum MicroOperation {
     SCF,
     CCF,
     DISABLE_INTERRUPTS,
-    ENABLE_INTERRUPTS
+    ENABLE_INTERRUPTS,
+    ENABLE_INTERRUPTS_DELAYED
 } MicroOperation;
 
 typedef enum Condition {

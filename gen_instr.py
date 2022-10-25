@@ -507,7 +507,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
 
         # EI
         if op == 0xFB:
-            return ("EI", [{"uop": "ENABLE_INTERRUPTS"}])
+            return ("EI", [{"uop": "ENABLE_INTERRUPTS_DELAYED"}])
 
         # CALL cond,u16 / CALL u16
         if op in (0xC4, 0xCC, 0xCD, 0xD4, 0xDC):

@@ -715,7 +715,7 @@ static const Instruction instructions[0x100] = {
                {.uop = LD_R8_R8, .lhs = JP_HI, .rhs = BUS, .io = READ_PC_INC},
                {.uop = LD_R8_R8, .lhs = A, .rhs = BUS, .io = READ_JP, .end = true}}},
     [0xFB] = {"EI", 1,
-              {{.uop = ENABLE_INTERRUPTS, .end = true}}},
+              {{.uop = ENABLE_INTERRUPTS_DELAYED, .end = true}}},
     [0xFC] = {"(undefined)", 1,
               {{.undefined = true, .end = true}}},
     [0xFD] = {"(undefined)", 1,

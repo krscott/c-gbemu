@@ -440,6 +440,14 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         cpu->jp_hi = 0xAA;
         cpu->bus_reg = 0xAA;
 
+        if (cpu->halted) {
+            if (bus->reg_if || bus->reg_ie) {
+                cpu->halted = false;
+            } else {
+                return;
+            }
+        };
+
         // Handle interrupts
         if (cpu->ime) {
             // Check each interrupt for a jump in priority order
@@ -471,8 +479,6 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->ime_scheduled = false;
             cpu->ime = true;
         }
-
-        if (cpu->halted) return;
 
         // Read next opcode (if not calling interrupt)
         if (!cpu->is_jp_interrupt) {
@@ -738,6 +744,9 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             cpu->ime = false;
             break;
         case ENABLE_INTERRUPTS:
+            cpu->ime = true;
+            break;
+        case ENABLE_INTERRUPTS_DELAYED:
             cpu->ime_scheduled = true;
             break;
         default:
@@ -857,8 +866,14 @@ void cpu_print_trace(const Cpu *cpu, const Bus *bus) {
         mnemonic, cpu->a, z, n, h, c, cpu->b, cpu->c, cpu->d, cpu->e, cpu->h,
         cpu->l, cpu->sp);
 
-    u8 mFF83h = bus_debug_peek(bus, 0xFF83);
-    printf(" 0xFF83:%02X", mFF83h);
+#define print_addr(reg) \
+    printf(" $" #reg ":%02X", bus_debug_peek(bus, (0x##reg)))
+
+    // printf(" $FF83:%02X", bus_debug_peek(bus, 0xFF83));
+    print_addr(FF0F);
+    print_addr(FFFF);
+
+#undef print_addr
 
     if (cpu->halted) {
         printf(" HALT");

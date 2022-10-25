@@ -235,7 +235,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
                 bus->reg_tac = value;
                 return;
             case 0xFF0F:
-                bus->reg_if = value & 0x1F;
+                bus->reg_if = value;
                 return;
         }
 
@@ -251,7 +251,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
             return;
         }
 
-        panicf("TODO: I/O $%04X", address);
+        // panicf("TODO: I/O $%04X", address);
         return;
     }
 

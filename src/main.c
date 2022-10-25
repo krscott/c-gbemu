@@ -11,6 +11,8 @@
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
+#define STOP_ON_BLARGG_TEST_END
+
 typedef struct Opts {
     const char *rom_filename;
     _Atomic bool verbose;
@@ -113,10 +115,13 @@ static void *emu_thread() {
 
         gb_step(&gb);
 
+#ifdef STOP_ON_BLARGG_TEST_END
         if (0 == strcmp("Passed\n", gb.debug_serial_message) ||
-            0 == strcmp("Failed\n", gb.debug_serial_message)) {
+            0 == strcmp("Failed\n", gb.debug_serial_message) ||
+            0 == strcmp("Failed #2\n", gb.debug_serial_message)) {
             gb.shutdown = true;
         }
+#endif
 
         shutdown = gb.shutdown;
 
