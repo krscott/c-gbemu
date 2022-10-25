@@ -21,20 +21,20 @@
     } while (0)
 #define ASSERT_EQ_U8(a, b) ASSERT_EQ((a), (b), "0x%02X")
 
-#define BLARGG_MAX_CYCLES 2000000
+#define BLARGG_MAX_CYCLES 10000000
 
 const char *blargg_roms[] = {
     "roms/01-special.gb",
     // "roms/02-interrupts.gb",
-    "roms/03-op sp,hl.gb",            //
-    "roms/04-op r,imm.gb",            //
-    "roms/05-op rp.gb",               //
-    "roms/06-ld r,r.gb",              //
-    "roms/07-jr,jp,call,ret,rst.gb",  //
-    // "roms/08-misc instrs.gb",
-    // "roms/09-op r,r.gb",
-    // "roms/10-bit ops.gb",
-    // "roms/11-op a,(hl).gb",
+    "roms/03-op sp,hl.gb",
+    "roms/04-op r,imm.gb",
+    "roms/05-op rp.gb",
+    "roms/06-ld r,r.gb",
+    "roms/07-jr,jp,call,ret,rst.gb",
+    "roms/08-misc instrs.gb",
+    "roms/09-op r,r.gb",
+    "roms/10-bit ops.gb",
+    "roms/11-op a,(hl).gb",
 };
 
 void test_cart(void) {
@@ -306,9 +306,12 @@ void test_blargg(void) {
             if (0 == strcmp("Passed\n", gb.debug_serial_message)) {
                 goto test_blarg__next;
             }
+            if (0 == strcmp("Failed\n", gb.debug_serial_message)) {
+                panicf("Test ROM failed: %s", filename);
+            }
         }
 
-        panicf("Test ROM failed or timed out: %s", filename);
+        panicf("Test ROM timed out: %s", filename);
 
     test_blarg__next:
         continue;

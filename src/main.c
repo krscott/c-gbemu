@@ -14,6 +14,12 @@ void *emu_thread() {
         pthread_mutex_lock(&gb_mutex);
 
         gb_step(&gb);
+
+        if (0 == strcmp("Passed\n", gb.debug_serial_message) ||
+            0 == strcmp("Failed\n", gb.debug_serial_message)) {
+            gb.shutdown = true;
+        }
+
         shutdown = gb.shutdown;
 
         pthread_mutex_unlock(&gb_mutex);
@@ -35,7 +41,7 @@ int main(int argc, char *args[]) {
 
     err_exit(gb_init(&gb));
 
-    // gb.trace_cpu_en = true;
+    gb.trace_cpu_en = true;
 
     err_exit(gb_load_rom_file(&gb, filename));
     // cart_print_info(&gb.bus.cart, filename);

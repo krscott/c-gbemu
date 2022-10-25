@@ -7,9 +7,6 @@ const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
 
 int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
-    (void)gb_mutex;
-    (void)gb;
-
     SDL_Window *window;
     SDL_Renderer *renderer;
     // SDL_Texture *texture;
@@ -17,6 +14,7 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
     SDL_Event e;
 
     int err = 0;
+    bool shutdown = false;
 
     err = SDL_Init(SDL_INIT_VIDEO);
     if (err) goto ui_main_exit;
@@ -31,7 +29,11 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
     screen = SDL_GetWindowSurface(window);
 
     // UI Main loop
-    for (;;) {
+    while (!shutdown) {
+        pthread_mutex_lock(gb_mutex);
+        shutdown = gb->shutdown;
+        pthread_mutex_unlock(gb_mutex);
+
         // Handle events
         while (SDL_PollEvent(&e) > 0) {
             // TODO window updates
@@ -47,6 +49,8 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
 
             SDL_UpdateWindowSurface(window);
         }
+
+        SDL_Delay(8);
     }
 
 ui_main_exit:

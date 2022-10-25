@@ -240,7 +240,7 @@ void bit_rlc(u8 *value, u8 *flags) {
 
 void bit_rrc(u8 *value, u8 *flags) {
     *value = to_u16(*value, *value) >> 1;
-    *flags = chk_z(*value) | (*value & 1 ? FC : 0);
+    *flags = chk_z(*value) | (*value & 0x80 ? FC : 0);
 }
 
 void bit_rl(u8 *value, u8 *flags) {
@@ -677,15 +677,19 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             break;
         case RLCA:
             cpu_run_bitshift_op(cpu, A, bit_rlc);
+            cpu->f &= FC;
             break;
         case RRCA:
             cpu_run_bitshift_op(cpu, A, bit_rrc);
+            cpu->f &= FC;
             break;
         case RLA:
             cpu_run_bitshift_op(cpu, A, bit_rl);
+            cpu->f &= FC;
             break;
         case RRA:
             cpu_run_bitshift_op(cpu, A, bit_rr);
+            cpu->f &= FC;
             break;
         case PREFIX_OP_1: {
             // Register r8 Prefix Op

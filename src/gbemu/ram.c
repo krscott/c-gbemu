@@ -12,7 +12,7 @@ GbErr ram_init(Ram *ram, size_t size) {
         // An emulated program may access uninitilzed memory, so we need to
         // initialize it. However, it is undefined behavior for them, so we can
         // use any value.
-        memset(ram->data, 0xAA, size);
+        memset(ram->data, 0, size);
     } else {
         ram->data = NULL;
     }
