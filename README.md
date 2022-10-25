@@ -13,10 +13,29 @@ Run `c-gbemu` with a ROM as an argument:
 ./c-gbemu Tetris.gb
 ```
 
-The console will display a trace of CPU operations and bus read/writes:
+Use `-h` option to list command line options.
 
-![CPU Trace Example](docs/trace.png "CPU Trace Example")
+## Build
 
+Build debug
+```
+make
+```
+
+Build release
+```
+make BUILD=release
+```
+
+Run tests
+```
+make check
+```
+
+Run Dr. Memory analysis. (Requires `drmemory` to be in `PATH`)
+```
+make drmem
+```
 
 ## Windows Setup
 
@@ -42,28 +61,6 @@ pacman -S \
     mingw64/mingw-w64-x86_64-SDL2_net
 ```
 
-## Build
-
-Build debug
-```
-make
-```
-
-Build release
-```
-make BUILD=release
-```
-
-Run tests
-```
-make check
-```
-
-Run Dr. Memory analysis. (Requires `drmemory` to be in `PATH`)
-```
-make drmem
-```
-
 ## C Style Settings
 
 These clang-format settings are used for VSCode:
@@ -72,6 +69,22 @@ These clang-format settings are used for VSCode:
 ```
 [More info](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
 
-## Test ROMs
+## Compliance
+
+Run `make check` to run all tests.
+
+| Blargg Test           | Status |
+| --------------------- | :----: |
+| 01-special            |   ✅    |
+| 02-interrupts         |   ❌    |
+| 03-op sp,hl           |   ✅    |
+| 04-op r,imm           |   ✅    |
+| 05-op rp              |   ✅    |
+| 06-ld r,r             |   ✅    |
+| 07-jr,jp,call,ret,rst |   ✅    |
+| 08-misc instrs        |   ✅    |
+| 09-op r,r             |   ✅    |
+| 10-bit ops            |   ✅    |
+| 11-op a,(hl)          |   ✅    |
 
 Test ROMs by [Blargg](https://web.archive.org/web/20160830121433/http://blargg.8bitalley.com/parodius/gb-tests/).
