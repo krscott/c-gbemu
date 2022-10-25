@@ -73,7 +73,7 @@ void gb_boot_dmg(GameBoy *gb) {
     gb->bus.is_bootrom_disabled = true;
 }
 
-void gb_update_serial_message_buffer(GameBoy *gb) {
+static void gb_update_serial_message_buffer(GameBoy *gb) {
     if (bus_is_serial_transfer_requested(&gb->bus)) {
         char c = bus_take_serial_byte(&gb->bus);
 

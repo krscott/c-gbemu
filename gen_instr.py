@@ -585,7 +585,7 @@ print(f"""
 #include "instructions.h"
 
 // clang-format off
-const Instruction instructions[0x100] = {{""", file=dest_file)
+static const Instruction instructions[0x100] = {{""", file=dest_file)
 
 for op in range(0x100):
     (mnemonic, instr) = op_instr(op)
@@ -601,7 +601,7 @@ for op in range(0x100):
 
 print("""};
 
-const char *prefix_mnemonics[0x100] = {""", file=dest_file)
+static const char *prefix_mnemonics[0x100] = {""", file=dest_file)
 
 for op in range(0x100):
     reg = R8_TARGETS_STR[op & 7]

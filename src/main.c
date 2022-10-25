@@ -12,13 +12,15 @@ typedef struct Opts {
     _Atomic bool trace;
 } Opts;
 
-Opts opts;
-GameBoy gb;
-pthread_mutex_t gb_mutex;
+static Opts opts;
+static GameBoy gb;
+static pthread_mutex_t gb_mutex;
 
-void print_usage(void) { printf("Usage: c-gbemu [-h] [-v] [-t] ROMFILE\n"); }
+static void print_usage(void) {
+    printf("Usage: c-gbemu [-h] [-v] [-t] ROMFILE\n");
+}
 
-void print_help(void) {
+static void print_help(void) {
     printf("c-gbemu: A GameBoy emulator by Kris Scott\n");
     printf("\n");
     print_usage();
@@ -31,7 +33,7 @@ void print_help(void) {
     printf("\n");
 }
 
-void opts_parse(Opts *opts, int argc, char *args[]) {
+static void opts_parse(Opts *opts, int argc, char *args[]) {
     int i;
     size_t j, len, arglen;
     const char *arg;
@@ -86,7 +88,7 @@ void opts_parse(Opts *opts, int argc, char *args[]) {
     }
 }
 
-void *emu_thread() {
+static void *emu_thread() {
     bool shutdown = false;
     while (!shutdown) {
         pthread_mutex_lock(&gb_mutex);

@@ -44,31 +44,58 @@ typedef struct Bus {
 } Bus;
 
 GbErr bus_init(Bus *bus) nodiscard;
-GbErr bus_load_cart_from_file(Bus *bus, const char *cart_filename) nodiscard;
-GbErr bus_load_cart_from_buffer(Bus *bus, const u8 *buffer,
-                                size_t size) nodiscard;
+void bus_deinit(Bus *bus);
+
+/// @brief Copy data from buffer into bootrom
+/// @param buffer non-NULL
+/// @param size
+/// @return GbErr code. 0 is success
 GbErr bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer,
                                    size_t size) nodiscard;
 
-void bus_deinit(Bus *bus);
+/// @brief Copy data from buffer into cartridge
+/// @param buffer non-NULL
+/// @param size
+/// @return GbErr code. 0 is success
+GbErr bus_load_cart_from_buffer(Bus *bus, const u8 *buffer,
+                                size_t size) nodiscard;
+
+/// @brief Copy data from file into cartridge
+/// @param bus non-NULL
+/// @param cart_filename non-NULL
+/// @return GbErr code. 0 is success
+GbErr bus_load_cart_from_file(Bus *bus, const char *cart_filename) nodiscard;
 
 /// @brief Read data from the bus
-/// @param bus Must not be NULL
+/// @param bus non-NULL
 /// @param address
-/// @return
+/// @return byte at the given address
 u8 bus_read(const Bus *bus, u16 address);
 
+/// @brief Read data from bus for debug purposes. i.e. No side-effects or
+/// errors.
+/// @param bus non-NULL
+/// @param address
+/// @return byte at the given address
 u8 bus_debug_peek(const Bus *bus, u16 address);
 
-/// @brief Write data to the bus
-/// @param bus Must not be NULL
+/// @brief Write a byte to the bus
+/// @param bus non-NULL
 /// @param address
 /// @param value
 void bus_write(Bus *bus, u16 address, u8 value);
 
-bool bus_is_serial_transfer_requested(Bus *bus);
-u8 bus_take_serial_byte(Bus *bus);
-
-/// @brief Advance clock by 4 and update timers.
-/// @param bus
+/// @brief Advance clock by 4 and update timers accordingly.
+/// @param bus non-NULL
 void bus_cycle(Bus *bus);
+
+/// @brief Check if a byte is ready to be taken by bus_take_serial_byte()
+/// @param bus non-NULL
+/// @return true if ready
+bool bus_is_serial_transfer_requested(Bus *bus);
+
+/// @brief Take a byte from the serial buffer. Check that
+/// bus_is_serial_transfer_requested() is true before calling this function.
+/// @param bus non-NULL
+/// @return
+u8 bus_take_serial_byte(Bus *bus);

@@ -19,10 +19,10 @@ typedef enum InterruptAddr {
     INTR_JOYPAD_ADDR = 0x60,
 } InterruptAddr;
 
-u8 low_byte(u16 word) { return (u8)(word & 0xFF); }
-u8 high_byte(u16 word) { return (u8)(word >> 8); }
-u16 to_u16(u8 hi, u8 lo) { return (((u16)hi) << 8) | ((u16)lo); }
-void split_u16(u16 value, u8 *hi, u8 *lo) {
+static u8 low_byte(u16 word) { return (u8)(word & 0xFF); }
+static u8 high_byte(u16 word) { return (u8)(word >> 8); }
+static u16 to_u16(u8 hi, u8 lo) { return (((u16)hi) << 8) | ((u16)lo); }
+static void split_u16(u16 value, u8 *hi, u8 *lo) {
     *hi = high_byte(value);
     *lo = low_byte(value);
 }
@@ -31,24 +31,25 @@ u16 cpu_af(const Cpu *cpu) { return to_u16(cpu->a, cpu->f); }
 u16 cpu_bc(const Cpu *cpu) { return to_u16(cpu->b, cpu->c); }
 u16 cpu_de(const Cpu *cpu) { return to_u16(cpu->d, cpu->e); }
 u16 cpu_hl(const Cpu *cpu) { return to_u16(cpu->h, cpu->l); }
-u16 cpu_hl_postinc(Cpu *cpu) {
+
+static u16 cpu_hl_postinc(Cpu *cpu) {
     u16 x = to_u16(cpu->h, cpu->l);
     split_u16(x + 1, &cpu->h, &cpu->l);
     return x;
 }
-u16 cpu_hl_postdec(Cpu *cpu) {
+static u16 cpu_hl_postdec(Cpu *cpu) {
     u16 x = to_u16(cpu->h, cpu->l);
     split_u16(x - 1, &cpu->h, &cpu->l);
     return x;
 }
-u16 cpu_jp_reg(const Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
-u16 cpu_jp_reg_postinc(Cpu *cpu) {
+static u16 cpu_jp_reg(const Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
+static u16 cpu_jp_reg_postinc(Cpu *cpu) {
     u16 x = to_u16(cpu->jp_hi, cpu->jp_lo);
     split_u16(x + 1, &cpu->jp_hi, &cpu->jp_lo);
     return x;
 }
 
-void cpu_set(Cpu *cpu, Target target, u8 value) {
+static void cpu_set(Cpu *cpu, Target target, u8 value) {
     switch (target) {
         case TARGET_NONE:
             break;
@@ -105,7 +106,7 @@ void cpu_set(Cpu *cpu, Target target, u8 value) {
     }
 }
 
-u8 cpu_get(const Cpu *cpu, Target target) {
+static u8 cpu_get(const Cpu *cpu, Target target) {
     switch (target) {
         case TARGET_NONE:
             return 0xAA;
@@ -146,7 +147,7 @@ u8 cpu_get(const Cpu *cpu, Target target) {
     }
 }
 
-void alu_add(u8 lhs, u8 rhs, u8 carry, u8 *out, u8 *flags) {
+static void alu_add(u8 lhs, u8 rhs, u8 carry, u8 *out, u8 *flags) {
     carry = carry ? 1 : 0;
 
     u8 res = lhs + rhs + carry;
@@ -159,7 +160,7 @@ void alu_add(u8 lhs, u8 rhs, u8 carry, u8 *out, u8 *flags) {
     *out = res;
 }
 
-void alu_sub(u8 lhs, u8 rhs, u8 borrow, u8 *out, u8 *flags) {
+static void alu_sub(u8 lhs, u8 rhs, u8 borrow, u8 *out, u8 *flags) {
     borrow = borrow ? 1 : 0;
 
     u8 res = lhs - rhs - borrow;
@@ -172,7 +173,8 @@ void alu_sub(u8 lhs, u8 rhs, u8 borrow, u8 *out, u8 *flags) {
     *out = res;
 }
 
-void cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
+static void cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub,
+                        bool use_carry) {
     u8 lhs_val = cpu_get(cpu, lhs);
     u8 rhs_val = cpu_get(cpu, rhs);
     u8 carry_val = use_carry ? (cpu->f & FC) != 0 : 0;
@@ -184,7 +186,7 @@ void cpu_run_alu(Cpu *cpu, Target lhs, Target rhs, bool sub, bool use_carry) {
     cpu_set(cpu, lhs, lhs_val);
 }
 
-void alu_add_u16_i8(u16 lhs16, u8 rhs, u16 *out, u8 *flags) {
+static void alu_add_u16_i8(u16 lhs16, u8 rhs, u16 *out, u8 *flags) {
     u16 rhs16 = (i16)((i8)rhs);
     *out = lhs16 + rhs16;
 
@@ -193,47 +195,47 @@ void alu_add_u16_i8(u16 lhs16, u8 rhs, u16 *out, u8 *flags) {
     *flags = h | c;
 }
 
-void alu_inc(u8 lhs, u8 *out, u8 *flags) {
+static void alu_inc(u8 lhs, u8 *out, u8 *flags) {
     *out = lhs + 1;
     *flags = chk_z(*out) | ((lhs & 0xF) == 0xF ? FH : 0) | (*flags & FC);
 }
 
-void alu_dec(u8 lhs, u8 *out, u8 *flags) {
+static void alu_dec(u8 lhs, u8 *out, u8 *flags) {
     *out = lhs - 1;
     *flags = chk_z(*out) | FN | ((lhs & 0xF) == 0 ? FH : 0) | (*flags & FC);
 }
 
-void bitwise_and(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+static void bitwise_and(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     *out = lhs & rhs;
     *flags = chk_z(*out) | FH;
 }
 
-void bitwise_xor(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+static void bitwise_xor(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     *out = lhs ^ rhs;
     *flags = chk_z(*out);
 }
 
-void bitwise_or(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+static void bitwise_or(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     *out = lhs | rhs;
     *flags = chk_z(*out);
 }
 
-void alu_cp(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
+static void alu_cp(u8 lhs, u8 rhs, u8 *out, u8 *flags) {
     // Same as SUB r8,r8 but result is ignored
     (void)out;
     u8 dummy;
     alu_sub(lhs, rhs, 0, &dummy, flags);
 }
 
-void cpu_run_bitwise_op(Cpu *cpu, Target lhs, Target rhs,
-                        void (*bitwise_op)(u8, u8, u8 *, u8 *)) {
+static void cpu_run_bitwise_op(Cpu *cpu, Target lhs, Target rhs,
+                               void (*bitwise_op)(u8, u8, u8 *, u8 *)) {
     u8 lhs_val = cpu_get(cpu, lhs);
     u8 rhs_val = cpu_get(cpu, rhs);
     bitwise_op(lhs_val, rhs_val, &lhs_val, &cpu->f);
     cpu_set(cpu, lhs, lhs_val);
 }
 
-void bit_rlc(u8 *value, u8 *flags) {
+static void bit_rlc(u8 *value, u8 *flags) {
     *value = to_u16(*value, *value) >> 7;
     *flags = chk_z(*value) | (*value & 1 ? FC : 0);
 }
@@ -243,34 +245,34 @@ void bit_rrc(u8 *value, u8 *flags) {
     *flags = chk_z(*value) | (*value & 0x80 ? FC : 0);
 }
 
-void bit_rl(u8 *value, u8 *flags) {
+static void bit_rl(u8 *value, u8 *flags) {
     bool new_carry = *value & 0x80;
     // Move carry flag to bit 7 so that it is shifted into 0
     *value = to_u16(*value, *flags << 3) >> 7;
     *flags = chk_z(*value) | (new_carry ? FC : 0);
 }
 
-void bit_rr(u8 *value, u8 *flags) {
+static void bit_rr(u8 *value, u8 *flags) {
     bool new_carry = *value & 1;
     // Move carry flag to bit 9 so that it is shifted into 8
     *value = to_u16(*flags >> 4, *value) >> 1;
     *flags = chk_z(*value) | (new_carry ? FC : 0);
 }
 
-void bit_sla(u8 *value, u8 *flags) {
+static void bit_sla(u8 *value, u8 *flags) {
     bool new_carry = *value & 0x80;
     *value <<= 1;
     *flags = chk_z(*value) | (new_carry ? FC : 0);
 }
 
-void bit_sra(u8 *value, u8 *flags) {
+static void bit_sra(u8 *value, u8 *flags) {
     bool new_carry = *value & 1;
     // Arithmetic shift: sign bit is preserved
     *value = (*value & 0x80) | (*value >> 1);
     *flags = chk_z(*value) | (new_carry ? FC : 0);
 }
 
-void bit_srl(u8 *value, u8 *flags) {
+static void bit_srl(u8 *value, u8 *flags) {
     bool new_carry = *value & 1;
     // Logical shift: sign bit is removed
     *value >>= 1;
@@ -278,19 +280,19 @@ void bit_srl(u8 *value, u8 *flags) {
     *flags = chk_z(*value) | (new_carry ? FC : 0);
 }
 
-void bit_swap(u8 *value, u8 *flags) {
+static void bit_swap(u8 *value, u8 *flags) {
     *value = (*value << 4) | (*value >> 4);
     *flags = chk_z(*value);
 }
 
-void cpu_run_bitshift_op(Cpu *cpu, Target target,
-                         void (*bitshift_op)(u8 *, u8 *)) {
+static void cpu_run_bitshift_op(Cpu *cpu, Target target,
+                                void (*bitshift_op)(u8 *, u8 *)) {
     u8 value = cpu_get(cpu, target);
     bitshift_op(&value, &cpu->f);
     cpu_set(cpu, target, value);
 }
 
-Target get_prefix_op_target(u8 prefix_op) {
+static Target get_prefix_op_target(u8 prefix_op) {
     switch (prefix_op & 7) {
         case 0:
             return B;
@@ -313,7 +315,7 @@ Target get_prefix_op_target(u8 prefix_op) {
     return TARGET_NONE;
 }
 
-void cpu_run_prefix_op(Cpu *cpu, u8 prefix_op, Target target) {
+static void cpu_run_prefix_op(Cpu *cpu, u8 prefix_op, Target target) {
     u8 bitmask = 1 << ((prefix_op >> 3) & 7);
 
     switch (prefix_op >> 6) {
@@ -372,7 +374,7 @@ void cpu_run_prefix_op(Cpu *cpu, u8 prefix_op, Target target) {
     }
 }
 
-void daa(u8 *value, u8 *flags) {
+static void daa(u8 *value, u8 *flags) {
     // Z is set as normal
     // N is unchanged
     // H flag is always cleared
@@ -397,7 +399,7 @@ void daa(u8 *value, u8 *flags) {
     *flags = (*flags & (FC | FN)) | chk_z(*value);
 }
 
-bool cpu_check_jp_interrupt(Cpu *cpu, Bus *bus, u8 mask, u16 address) {
+static bool cpu_check_jp_interrupt(Cpu *cpu, Bus *bus, u8 mask, u16 address) {
     if ((bus->reg_if & bus->reg_ie & mask) == 0) return false;
 
     bus->reg_if &= ~mask;
@@ -865,15 +867,15 @@ void cpu_print_trace(const Cpu *cpu, const Bus *bus) {
     printf("\n");
 }
 
-void cpu_print_info(const Cpu *cpu) {
-    printf("CPU Cycle: %lld\n", cpu->cycle);
-    printf("  A: %02X  F: %02X\n", cpu->a, cpu->f);
-    printf("  B: %02X  C: %02X\n", cpu->b, cpu->c);
-    printf("  D: %02X  E: %02X\n", cpu->d, cpu->e);
-    printf("  H: %02X  L: %02X\n", cpu->h, cpu->l);
-    printf("  SP: %04X\n", cpu->sp);
-    printf("  PC: %04X\n", cpu->pc);
-    printf("  tmp: %04X busreg: %02X\n", to_u16(cpu->jp_hi, cpu->jp_lo),
-           cpu->bus_reg);
-    printf("  op: %02X  step: %d\n", cpu->opcode, cpu->ucode_step);
-}
+// void cpu_print_info(const Cpu *cpu) {
+//     printf("CPU Cycle: %lld\n", cpu->cycle);
+//     printf("  A: %02X  F: %02X\n", cpu->a, cpu->f);
+//     printf("  B: %02X  C: %02X\n", cpu->b, cpu->c);
+//     printf("  D: %02X  E: %02X\n", cpu->d, cpu->e);
+//     printf("  H: %02X  L: %02X\n", cpu->h, cpu->l);
+//     printf("  SP: %04X\n", cpu->sp);
+//     printf("  PC: %04X\n", cpu->pc);
+//     printf("  tmp: %04X busreg: %02X\n", to_u16(cpu->jp_hi, cpu->jp_lo),
+//            cpu->bus_reg);
+//     printf("  op: %02X  step: %d\n", cpu->opcode, cpu->ucode_step);
+// }

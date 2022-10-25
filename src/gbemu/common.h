@@ -20,9 +20,11 @@ typedef int16_t i16;
 typedef int32_t i32;
 typedef int64_t i64;
 
-/// Defer macro which wraps "cleanup" attribute
+/// Alias for attribute cleanup
 #define defer(func) __attribute__((cleanup(func)))
 
+/// Alias for attribute warn_unused_result
 #define nodiscard __attribute__((warn_unused_result))
 
+/// Macro to get the length of fixed-size array
 #define array_len(arr) (sizeof(arr) / (sizeof(arr[0])))

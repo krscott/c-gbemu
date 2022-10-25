@@ -37,9 +37,9 @@ void bus_deinit(Bus *bus) {
     ram_deinit(&bus->high_ram);
 }
 
-GbErr bus_load_cart_from_file(Bus *bus, const char *cart_filename) {
-    cart_deinit(&bus->cart);
-    return cart_init(&bus->cart, cart_filename);
+GbErr bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
+    rom_deinit(&bus->boot);
+    return rom_init_from_buffer(&bus->boot, buffer, size);
 }
 
 GbErr bus_load_cart_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
@@ -47,12 +47,12 @@ GbErr bus_load_cart_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
     return cart_init_from_buffer(&bus->cart, buffer, size);
 }
 
-GbErr bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
-    rom_deinit(&bus->boot);
-    return rom_init_from_buffer(&bus->boot, buffer, size);
+GbErr bus_load_cart_from_file(Bus *bus, const char *cart_filename) {
+    cart_deinit(&bus->cart);
+    return cart_init(&bus->cart, cart_filename);
 }
 
-u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
+static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
     assert(bus);
 
     // 0x0000..=0x3FFF Boot ROM bank 0
@@ -268,23 +268,6 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     bus->reg_ie = value;
 }
 
-bool bus_is_serial_transfer_requested(Bus *bus) {
-    return (bus->reg_sc & 0x80) != 0;
-}
-
-u8 bus_take_serial_byte(Bus *bus) {
-    assert(bus_is_serial_transfer_requested(bus));
-
-    // Clear transfer flag
-    bus->reg_sc &= ~0x80;
-
-    // Set serial interrupt request
-    bus->reg_if |= INTR_SERIAL_MASK;
-
-    // Return transfered data
-    return bus->reg_sb;
-}
-
 void bus_cycle(Bus *bus) {
     assert(bus);
     assert(bus->clocks % 4 == 0);
@@ -323,4 +306,21 @@ void bus_cycle(Bus *bus) {
             bus->reg_tima = bus->reg_tma;
         }
     }
+}
+
+bool bus_is_serial_transfer_requested(Bus *bus) {
+    return (bus->reg_sc & 0x80) != 0;
+}
+
+u8 bus_take_serial_byte(Bus *bus) {
+    assert(bus_is_serial_transfer_requested(bus));
+
+    // Clear transfer flag
+    bus->reg_sc &= ~0x80;
+
+    // Set serial interrupt request
+    bus->reg_if |= INTR_SERIAL_MASK;
+
+    // Return transfered data
+    return bus->reg_sb;
 }

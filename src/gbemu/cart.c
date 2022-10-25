@@ -43,7 +43,7 @@ static const char *ROM_TYPES[] = {
     "MBC7+SENSOR+RUMBLE+RAM+BATTERY",
 };
 
-const char *cart_type_name(const CartHeaderView *header) {
+static const char *cart_type_name(const CartHeaderView *header) {
     if (header->cart_type <= 0x22) {
         return ROM_TYPES[header->cart_type];
     }
@@ -214,7 +214,7 @@ u8 cart_licensee_code(const CartHeaderView *header) {
     return header->old_licensee_code;
 }
 
-const char *cart_licensee_name(const CartHeaderView *header) {
+static const char *cart_licensee_name(const CartHeaderView *header) {
     u8 code = cart_licensee_code(header);
     return LICENSEE_CODE[code];
 }
@@ -258,7 +258,7 @@ bool cart_is_valid_header(const Cartridge *cart) {
     return (u8)(chk & 0xff) == header->checksum;
 }
 
-GbErr cart_mc_init(Cartridge *cart, size_t ram_size) {
+static GbErr cart_mc_init(Cartridge *cart, size_t ram_size) {
     assert(cart);
 
     GbErr err = ram_init(&cart->ram, ram_size);

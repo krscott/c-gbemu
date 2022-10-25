@@ -10,8 +10,8 @@
 // 1 MiB
 #define CART_MBC1_RAM_SIZE 0x100000
 
-// https://gbdev.io/pandocs/The_Cartridge_Header.html
-
+/// @brief A view into header data of the cartridge.
+/// Details: https://gbdev.io/pandocs/The_Cartridge_Header.html
 typedef struct CartHeaderView {
     const u8 entry[4];
     const u8 logo[0x30];
@@ -29,6 +29,8 @@ typedef struct CartHeaderView {
 } CartHeaderView;
 static_assert(sizeof(CartHeaderView) == 0x50);
 
+/// @brief A game cartridge. Contains ROM, RAM, and memory bank control
+/// registers.
 typedef struct Cartridge {
     Rom rom;
     Ram ram;
@@ -39,18 +41,18 @@ typedef struct Cartridge {
 } Cartridge;
 
 /// @brief Initialize cartridge and allocate ROM data from file
-/// @param cart
+/// @param cart non-NULL
 /// @param filename The name of the file. Must not be NULL.
 /// @return Error code
 GbErr cart_init(Cartridge *cart, const char *filename) nodiscard;
 
 /// @brief Initialize cartridge without ROM data
-/// @param cart
+/// @param cart non-NULL
 /// @return Error code
 GbErr cart_init_none(Cartridge *cart) nodiscard;
 
 /// @brief Initialize cartridge by copying data from given buffer
-/// @param cart
+/// @param cart non-NULL
 /// @param buffer
 /// @param size
 /// @return Error code
@@ -58,33 +60,33 @@ GbErr cart_init_from_buffer(Cartridge *cart, const u8 *buffer,
                             size_t size) nodiscard;
 
 /// @brief Deinitialize cartridge and free child data
-/// @param cart
+/// @param cart non-NULL
 void cart_deinit(Cartridge *cart);
 
 /// @brief Read data at the given address of the cartridge.
-/// @param cart Must not be NULL
+/// @param cart non-NULL
 /// @param address
 /// @return Cart ROM data if address is in bounds, 0 otherwise.
 u8 cart_read(const Cartridge *cart, u16 address);
 
 /// @brief Write data at the given address of the cartridge
-/// @param cart Must not be NULL
+/// @param cart non-NULL
 /// @param address
 /// @param value
 void cart_write(Cartridge *cart, u16 address, u8 value);
 
 /// @brief Print cart info.
-/// @param cart The cart ROM data. Must not be null.
+/// @param cart non-NULL
 /// @param filename Optional. If NULL, filename will not be printed
 void cart_print_info(const Cartridge *cart, const char *filename);
 
 /// @brief Get a view of the cart's header data.
-/// @param cart Must not be NULL.
+/// @param cart non-NULL
 /// @return A pointer to CartHeaderView, which has the same lifetime as the
 /// given cart data.
 const CartHeaderView *cart_header(const Cartridge *cart);
 
 /// @brief Validate cart header checksum.
-/// @param cart Must not be null.
+/// @param cart non-NULL
 /// @return
 bool cart_is_valid_header(const Cartridge *cart);

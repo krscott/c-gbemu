@@ -6,7 +6,7 @@
 #include "instructions.h"
 
 // clang-format off
-const Instruction instructions[0x100] = {
+static const Instruction instructions[0x100] = {
     [0x00] = {"NOP", 1,
               {{.end = true}}},
     [0x01] = {"LD BC,u16", 3,
@@ -730,7 +730,7 @@ const Instruction instructions[0x100] = {
                {.uop = RST, .end = true}}},
 };
 
-const char *prefix_mnemonics[0x100] = {
+static const char *prefix_mnemonics[0x100] = {
     "RLC B",      "RLC C",      "RLC D",      "RLC E",      
     "RLC H",      "RLC L",      "RLC (HL)",   "RLC A",      
     "RRC B",      "RRC C",      "RRC D",      "RRC E",      

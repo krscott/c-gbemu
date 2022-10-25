@@ -13,7 +13,7 @@
 
 #define assert_eq_u8(a, b) log_assert_eq(a, b, "0x%02X")
 
-const char *blargg_roms[] = {
+static const char *blargg_roms[] = {
     "roms/01-special.gb",
     // "roms/02-interrupts.gb",
     "roms/03-op sp,hl.gb",
@@ -27,7 +27,7 @@ const char *blargg_roms[] = {
     "roms/11-op a,(hl).gb",
 };
 
-void test_cart(void) {
+static void test_cart(void) {
     const char *filename = blargg_roms[0];
 
     GameBoy gb defer(gb_deinit);
@@ -43,7 +43,7 @@ void test_cart(void) {
     assert_eq_u8(cart_read(cart, 0x210), 0xC3);
 }
 
-void test_microcode_is_valid(void) {
+static void test_microcode_is_valid(void) {
     for (size_t opcode = 0; opcode <= 0xFF; ++opcode) {
         for (size_t ustep = 0; ustep < MICRO_INSTRUCTION_SIZE; ++ustep) {
             const MicroInstr *uinst = instructions_get_uinst(opcode, ustep);
@@ -67,7 +67,7 @@ void test_microcode_is_valid(void) {
     }
 }
 
-void test_cpu_jp(void) {
+static void test_cpu_jp(void) {
     const u8 prog[] = {
         0xC3, 0xAA, 0xBB,  // JP $BBAA
     };
@@ -91,7 +91,7 @@ void test_cpu_jp(void) {
     assert_eq_u8(gb.cpu.pc, 0xBBAA);
 }
 
-void test_cpu_halt(void) {
+static void test_cpu_halt(void) {
     const u8 prog[] = {
         0x76,  // HALT
     };
@@ -105,7 +105,7 @@ void test_cpu_halt(void) {
     log_assert(gb.cpu.halted);
 }
 
-void test_cpu_ld_xor(void) {
+static void test_cpu_ld_xor(void) {
     const u8 prog[] = {
         0x3E, 0x55,  // LD A,$55
         0x06, 0xF0,  // LD B,$F0
@@ -129,7 +129,7 @@ void test_cpu_ld_xor(void) {
     assert_eq_u8(gb.cpu.f, 0x80);
 }
 
-void test_cpu_inc_dec(void) {
+static void test_cpu_inc_dec(void) {
     const u8 prog[] = {
         0x05,  // DEC B ; expect B == 0xFF, F == 0x60
         0x05,  // DEC B ; expect B == 0xFE, F == 0x40
@@ -158,7 +158,7 @@ void test_cpu_inc_dec(void) {
     assert_eq_u8(gb.cpu.f, 0xA0);
 }
 
-void test_cpu_hl(void) {
+static void test_cpu_hl(void) {
     const u8 prog[] = {
         0x2E, 0x00,  // LD L,$00
         0x26, 0xC0,  // LD H,$C0
@@ -175,7 +175,7 @@ void test_cpu_hl(void) {
     assert_eq_u8(bus_read(&gb.bus, 0xC000), 0x55);
 }
 
-void test_cpu_arith(void) {
+static void test_cpu_arith(void) {
     const u8 prog[] = {
         0x3E, 0x01,  // LD A,$01
         0x06, 0x02,  // LD B,$02
@@ -237,7 +237,7 @@ void test_cpu_arith(void) {
     assert_eq_u8(gb.cpu.f, 0x40);
 }
 
-void test_interrupt(void) {
+static void test_interrupt(void) {
     const u8 prog[] = {
         0x3E, 0x02,        // LD A,$02
         0xE0, 0xFF,        // LD $FFFF,A  ; Enable LCD_STAT
@@ -273,7 +273,7 @@ void test_interrupt(void) {
     assert_eq_u8(gb.cpu.pc, 0x0048);
 }
 
-void test_blargg(void) {
+static void test_blargg(void) {
     GameBoy gb defer(gb_deinit);
     err_exit(gb_init(&gb));
 
