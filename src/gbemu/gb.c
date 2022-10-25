@@ -122,3 +122,8 @@ void gb_run_until_halt(GameBoy *gb) {
         gb_step(gb);
     }
 }
+
+void gb_print_trace(const GameBoy *gb) {
+    assert(gb);
+    cpu_print_trace(&gb->cpu, &gb->bus);
+}

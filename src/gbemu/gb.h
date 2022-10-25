@@ -35,3 +35,5 @@ GbErr gb_load_bootrom_buffer(GameBoy *gb, const u8 *buffer,
 void gb_boot_dmg(GameBoy *gb);
 void gb_step(GameBoy *gb);
 void gb_run_until_halt(GameBoy *gb);
+
+void gb_print_trace(const GameBoy *gb);

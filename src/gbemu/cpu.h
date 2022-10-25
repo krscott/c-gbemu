@@ -32,14 +32,14 @@ typedef struct Cpu {
 } Cpu;
 
 u16 to_u16(u8 hi, u8 lo);
-u16 cpu_af(Cpu *cpu);
-u16 cpu_bc(Cpu *cpu);
-u16 cpu_de(Cpu *cpu);
-u16 cpu_hl(Cpu *cpu);
+u16 cpu_af(const Cpu *cpu);
+u16 cpu_bc(const Cpu *cpu);
+u16 cpu_de(const Cpu *cpu);
+u16 cpu_hl(const Cpu *cpu);
 
 void cpu_reset(Cpu *cpu);
 
 void cpu_cycle(Cpu *cpu, Bus *bus);
 
-void cpu_print_trace(Cpu *cpu, Bus *bus);
-void cpu_print_info(Cpu *cpu);
+void cpu_print_trace(const Cpu *cpu, const Bus *bus);
+void cpu_print_info(const Cpu *cpu);

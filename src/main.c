@@ -91,6 +91,10 @@ void *emu_thread() {
     while (!shutdown) {
         pthread_mutex_lock(&gb_mutex);
 
+        if (opts.trace) {
+            gb_print_trace(&gb);
+        }
+
         gb_step(&gb);
 
         if (0 == strcmp("Passed\n", gb.debug_serial_message) ||

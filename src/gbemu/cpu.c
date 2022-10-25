@@ -27,10 +27,10 @@ void split_u16(u16 value, u8 *hi, u8 *lo) {
     *lo = low_byte(value);
 }
 
-u16 cpu_af(Cpu *cpu) { return to_u16(cpu->a, cpu->f); }
-u16 cpu_bc(Cpu *cpu) { return to_u16(cpu->b, cpu->c); }
-u16 cpu_de(Cpu *cpu) { return to_u16(cpu->d, cpu->e); }
-u16 cpu_hl(Cpu *cpu) { return to_u16(cpu->h, cpu->l); }
+u16 cpu_af(const Cpu *cpu) { return to_u16(cpu->a, cpu->f); }
+u16 cpu_bc(const Cpu *cpu) { return to_u16(cpu->b, cpu->c); }
+u16 cpu_de(const Cpu *cpu) { return to_u16(cpu->d, cpu->e); }
+u16 cpu_hl(const Cpu *cpu) { return to_u16(cpu->h, cpu->l); }
 u16 cpu_hl_postinc(Cpu *cpu) {
     u16 x = to_u16(cpu->h, cpu->l);
     split_u16(x + 1, &cpu->h, &cpu->l);
@@ -41,7 +41,7 @@ u16 cpu_hl_postdec(Cpu *cpu) {
     split_u16(x - 1, &cpu->h, &cpu->l);
     return x;
 }
-u16 cpu_jp_reg(Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
+u16 cpu_jp_reg(const Cpu *cpu) { return to_u16(cpu->jp_hi, cpu->jp_lo); }
 u16 cpu_jp_reg_postinc(Cpu *cpu) {
     u16 x = to_u16(cpu->jp_hi, cpu->jp_lo);
     split_u16(x + 1, &cpu->jp_hi, &cpu->jp_lo);
@@ -105,7 +105,7 @@ void cpu_set(Cpu *cpu, Target target, u8 value) {
     }
 }
 
-u8 cpu_get(Cpu *cpu, Target target) {
+u8 cpu_get(const Cpu *cpu, Target target) {
     switch (target) {
         case TARGET_NONE:
             return 0xAA;
@@ -819,55 +819,53 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
     assert((cpu->f & 0x0F) == 0);
 }
 
-void cpu_print_trace(Cpu *cpu, Bus *bus) {
-    if (cpu->ucode_step == 0) {
-        u8 pc0 = bus_debug_peek(bus, cpu->pc);
-        const char *mnemonic = instructions_get_mnemonic(pc0);
-        u8 len = instructions_get_length(pc0);
+void cpu_print_trace(const Cpu *cpu, const Bus *bus) {
+    u8 pc0 = bus_debug_peek(bus, cpu->pc);
+    const char *mnemonic = instructions_get_mnemonic(pc0);
+    u8 len = instructions_get_length(pc0);
 
-        printf("%04X: %02X", cpu->pc, pc0);
+    printf("%04X: %02X", cpu->pc, pc0);
 
-        if (len > 1) {
-            u8 pc1 = bus_debug_peek(bus, cpu->pc + 1);
+    if (len > 1) {
+        u8 pc1 = bus_debug_peek(bus, cpu->pc + 1);
 
-            if (pc0 == 0xCB) {
-                mnemonic = instructions_get_prefix_mnemonic(pc1);
-            }
-
-            printf(" %02X", pc1);
-        } else {
-            printf("   ");
-        }
-        if (len > 2) {
-            u8 pc2 = bus_debug_peek(bus, cpu->pc + 2);
-            printf(" %02X", pc2);
-        } else {
-            printf("   ");
+        if (pc0 == 0xCB) {
+            mnemonic = instructions_get_prefix_mnemonic(pc1);
         }
 
-        char z = (cpu->f & FZ) ? 'Z' : '-';
-        char n = (cpu->f & FN) ? 'N' : '-';
-        char h = (cpu->f & FH) ? 'H' : '-';
-        char c = (cpu->f & FC) ? 'C' : '-';
-
-        printf(
-            " ; %-14s| A:%02X F:%c%c%c%c BC:%02X%02X DE:%02X%02X HL:%02X%02X "
-            "SP:%04X",
-            mnemonic, cpu->a, z, n, h, c, cpu->b, cpu->c, cpu->d, cpu->e,
-            cpu->h, cpu->l, cpu->sp);
-
-        u8 mFF83h = bus_debug_peek(bus, 0xFF83);
-        printf(" 0xFF83:%02X", mFF83h);
-
-        if (cpu->halted) {
-            printf(" HALT");
-        }
-
-        printf("\n");
+        printf(" %02X", pc1);
+    } else {
+        printf("   ");
     }
+    if (len > 2) {
+        u8 pc2 = bus_debug_peek(bus, cpu->pc + 2);
+        printf(" %02X", pc2);
+    } else {
+        printf("   ");
+    }
+
+    char z = (cpu->f & FZ) ? 'Z' : '-';
+    char n = (cpu->f & FN) ? 'N' : '-';
+    char h = (cpu->f & FH) ? 'H' : '-';
+    char c = (cpu->f & FC) ? 'C' : '-';
+
+    printf(
+        " ; %-14s| A:%02X F:%c%c%c%c BC:%02X%02X DE:%02X%02X HL:%02X%02X "
+        "SP:%04X",
+        mnemonic, cpu->a, z, n, h, c, cpu->b, cpu->c, cpu->d, cpu->e, cpu->h,
+        cpu->l, cpu->sp);
+
+    u8 mFF83h = bus_debug_peek(bus, 0xFF83);
+    printf(" 0xFF83:%02X", mFF83h);
+
+    if (cpu->halted) {
+        printf(" HALT");
+    }
+
+    printf("\n");
 }
 
-void cpu_print_info(Cpu *cpu) {
+void cpu_print_info(const Cpu *cpu) {
     printf("CPU Cycle: %lld\n", cpu->cycle);
     printf("  A: %02X  F: %02X\n", cpu->a, cpu->f);
     printf("  B: %02X  C: %02X\n", cpu->b, cpu->c);
