@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdatomic.h>
+
 #include "bus.h"
 #include "cart.h"
 #include "cpu.h"
@@ -10,11 +12,12 @@ typedef struct GameBoy {
     Cpu cpu;
     Bus bus;
 
-    bool trace_cpu_en;
+    /// @brief If true, CPU registers are printed before every instruction
+    _Atomic bool trace_cpu_en;
 
     /// @brief Flag indicating if user closed UI to tell emu thread to shutdown.
     /// Does not impact emulation itself.
-    bool shutdown;
+    _Atomic bool shutdown;
 
     /// @brief Index into debug_serial_message.
     u16 debug_serial_message_index;

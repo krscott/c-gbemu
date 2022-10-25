@@ -41,7 +41,7 @@ int main(int argc, char *args[]) {
 
     err_exit(gb_init(&gb));
 
-    gb.trace_cpu_en = true;
+    // gb.trace_cpu_en = true;
 
     err_exit(gb_load_rom_file(&gb, filename));
     // cart_print_info(&gb.bus.cart, filename);
@@ -67,9 +67,7 @@ int main(int argc, char *args[]) {
         ui_err = ui_main(&gb_mutex, &gb);
 
         // When UI exits, tell gameboy to shutdown
-        pthread_mutex_lock(&gb_mutex);
         gb.shutdown = true;
-        pthread_mutex_unlock(&gb_mutex);
 
         // Wait for emu thread to exit
         pthread_join(emu_thread_handle, NULL);

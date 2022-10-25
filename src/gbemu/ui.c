@@ -7,6 +7,8 @@ const int SCREEN_WIDTH = 1024;
 const int SCREEN_HEIGHT = 768;
 
 int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
+    (void)gb_mutex;
+
     SDL_Window *window;
     SDL_Renderer *renderer;
     // SDL_Texture *texture;
@@ -30,9 +32,7 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
 
     // UI Main loop
     while (!shutdown) {
-        pthread_mutex_lock(gb_mutex);
         shutdown = gb->shutdown;
-        pthread_mutex_unlock(gb_mutex);
 
         // Handle events
         while (SDL_PollEvent(&e) > 0) {
