@@ -6,6 +6,9 @@
 
 #include "gbemu/ui.h"
 
+#define PROG_NAME "c-gbemu"
+#define DOCS_URL "https://github.com/krscott/c-gbemu"
+
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
 typedef struct Opts {
@@ -19,19 +22,24 @@ static GameBoy gb;
 static pthread_mutex_t gb_mutex;
 
 static void print_usage(void) {
-    eprintf("Usage: c-gbemu [-h] [-v] [-t] ROMFILE\n");
+    eprintf("Usage: " PROG_NAME " [-h] [-v] [-t] ROMFILE\n");
 }
 
 static void print_help(void) {
-    eprintf("c-gbemu: A GameBoy emulator by Kris Scott\n");
+    eprintf(PROG_NAME ": A GameBoy emulator by Kris Scott\n");
     eprintf("\n");
     print_usage();
-    eprintf("Load and run a ROMFILE.\n");
+    eprintf("\n");
+    eprintf("Parmeters\n");
+    eprintf("  ROMFILE  GameBoy cartridge ROM file to emulate\n");
     eprintf("\n");
     eprintf("Options\n");
-    eprintf("  -h    Show this help.\n");
-    eprintf("  -v    Verbose mode.\n");
-    eprintf("  -t    Enable CPU trace messages.\n");
+    eprintf("  -h       Show this help\n");
+    eprintf("  -v       Verbose mode\n");
+    eprintf("  -t       Enable CPU trace messages\n");
+    eprintf("\n");
+    eprintf("Documentation\n");
+    eprintf("  " DOCS_URL "\n");
     eprintf("\n");
 }
 
