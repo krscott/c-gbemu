@@ -440,8 +440,10 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         cpu->jp_hi = 0xAA;
         cpu->bus_reg = 0xAA;
 
+        // TODO: "halt bug": https://gbdev.io/pandocs/halt.html
+
         if (cpu->halted) {
-            if (bus->reg_if || bus->reg_ie) {
+            if (bus->reg_if & bus->reg_ie) {
                 cpu->halted = false;
             } else {
                 return;
@@ -449,33 +451,27 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         };
 
         // Handle interrupts
-        if (cpu->ime) {
+        if (cpu->ime && (bus->reg_if & bus->reg_ie)) {
             // Check each interrupt for a jump in priority order
-            do {
-                if (cpu_check_jp_interrupt(cpu, bus, INTR_VBLANK_MASK,
-                                           INTR_VBLANK_ADDR)) {
-                    break;
-                }
-                if (cpu_check_jp_interrupt(cpu, bus, INTR_LCD_STAT_MASK,
-                                           INTR_LCD_STAT_ADDR)) {
-                    break;
-                }
-                if (cpu_check_jp_interrupt(cpu, bus, INTR_TIMER_MASK,
-                                           INTR_TIMER_ADDR)) {
-                    break;
-                }
-                if (cpu_check_jp_interrupt(cpu, bus, INTR_SERIAL_MASK,
-                                           INTR_SERIAL_ADDR)) {
-                    break;
-                }
-                if (cpu_check_jp_interrupt(cpu, bus, INTR_JOYPAD_MASK,
-                                           INTR_JOYPAD_ADDR)) {
-                    break;
-                }
-            } while (0);
+
+            cpu_check_jp_interrupt(cpu, bus, INTR_VBLANK_MASK,
+                                   INTR_VBLANK_ADDR) ||
+
+                (cpu_check_jp_interrupt(cpu, bus, INTR_LCD_STAT_MASK,
+                                        INTR_LCD_STAT_ADDR)) ||
+
+                (cpu_check_jp_interrupt(cpu, bus, INTR_TIMER_MASK,
+                                        INTR_TIMER_ADDR)) ||
+
+                (cpu_check_jp_interrupt(cpu, bus, INTR_SERIAL_MASK,
+                                        INTR_SERIAL_ADDR)) ||
+
+                (cpu_check_jp_interrupt(cpu, bus, INTR_JOYPAD_MASK,
+                                        INTR_JOYPAD_ADDR));
         }
+
         // IE sets IME after 1 instruction delay
-        else if (cpu->ime_scheduled) {
+        if (cpu->ime_scheduled) {
             cpu->ime_scheduled = false;
             cpu->ime = true;
         }
