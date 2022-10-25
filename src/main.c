@@ -6,6 +6,8 @@
 
 #include "gbemu/ui.h"
 
+#define eprintf(...) fprintf(stderr, __VA_ARGS__)
+
 typedef struct Opts {
     const char *rom_filename;
     _Atomic bool verbose;
@@ -17,20 +19,20 @@ static GameBoy gb;
 static pthread_mutex_t gb_mutex;
 
 static void print_usage(void) {
-    printf("Usage: c-gbemu [-h] [-v] [-t] ROMFILE\n");
+    eprintf("Usage: c-gbemu [-h] [-v] [-t] ROMFILE\n");
 }
 
 static void print_help(void) {
-    printf("c-gbemu: A GameBoy emulator by Kris Scott\n");
-    printf("\n");
+    eprintf("c-gbemu: A GameBoy emulator by Kris Scott\n");
+    eprintf("\n");
     print_usage();
-    printf("Load and run a ROMFILE.\n");
-    printf("\n");
-    printf("Options\n");
-    printf("  -h    Show this help.\n");
-    printf("  -v    Verbose mode.\n");
-    printf("  -t    Enable CPU trace messages.\n");
-    printf("\n");
+    eprintf("Load and run a ROMFILE.\n");
+    eprintf("\n");
+    eprintf("Options\n");
+    eprintf("  -h    Show this help.\n");
+    eprintf("  -v    Verbose mode.\n");
+    eprintf("  -t    Enable CPU trace messages.\n");
+    eprintf("\n");
 }
 
 static void opts_parse(Opts *opts, int argc, char *args[]) {
@@ -65,6 +67,10 @@ static void opts_parse(Opts *opts, int argc, char *args[]) {
                         case 't':
                             opts->trace = true;
                             break;
+                        default:
+                            eprintf("Unexpected option: -%c\n", arg[j]);
+                            print_usage();
+                            exit(1);
                     }
                 }
                 continue;
@@ -76,13 +82,13 @@ static void opts_parse(Opts *opts, int argc, char *args[]) {
             continue;
         }
 
-        printf("Error: too many options\n");
+        eprintf("Error: too many options\n");
         print_usage();
         exit(1);
     }
 
     if (!opts->rom_filename) {
-        printf("Error: missing ROMFILE\n");
+        eprintf("Error: missing ROMFILE\n");
         print_usage();
         exit(1);
     }
