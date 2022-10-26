@@ -6,7 +6,7 @@
 #include "rom.h"
 
 #define WORK_RAM_SIZE 0x2000
-#define HIGH_RAM_SIZE 0x007F
+#define HIGH_BYTE_RAM_SIZE 0x100
 
 typedef enum InterruptMask {
     INTR_VBLANK_MASK = 0x01,
@@ -26,7 +26,7 @@ typedef enum HighByteAddress {
     FF_TMA = 0x06,
     FF_TAC = 0x07,
 
-    FF_IE = 0x0F,
+    FF_IF = 0x0F,
     FF_NR10 = 0x10,
     FF_NR11 = 0x11,
     FF_NR12 = 0x12,
@@ -112,24 +112,7 @@ typedef struct Bus {
     Rom boot;
     Cartridge cart;
     Ram work_ram;
-    Ram high_ram;
-
-    /// @brief Serial transfer data (0xFF01)
-    u8 reg_sb;
-    /// @brief Serial transfer control (0xFF02)
-    u8 reg_sc;
-    /// @brief Divider register (0xFF04)
-    u8 reg_div;
-    /// @brief Timer counter (0xFF05)
-    u8 reg_tima;
-    /// @brief Timer modulo (0xFF06)
-    u8 reg_tma;
-    /// @brief Timer control (0xFF07)
-    u8 reg_tac;
-    /// @brief Interrupt flags (0xFF0F)
-    u8 reg_if;
-    /// @brief Interrupt enables (0xFFFF)
-    u8 reg_ie;
+    Ram high_byte_ram;
 
     u16 clocks;
     bool is_bootrom_disabled;

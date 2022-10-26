@@ -257,12 +257,12 @@ static void test_interrupt(void) {
     err_exit(gb_load_bootrom_buffer(&gb, prog, sizeof(prog)));
 
     gb_run_until_halt(&gb);
-    assert_eq_u8(gb.bus.reg_ie, 0x02);
+    assert_eq_u8(gb.bus.high_byte_ram.data[FF_IE], 0x02);
     log_assert(gb.cpu.ime);
 
     gb.cpu.halted = false;
     // Trigger interrupt
-    gb.bus.reg_if = gb.bus.reg_ie;
+    gb.bus.high_byte_ram.data[FF_IF] = gb.bus.high_byte_ram.data[FF_IE];
 
     // Interrupt call is 3 cycles, then check that PC is
     // LCD_STAT -> INT $48

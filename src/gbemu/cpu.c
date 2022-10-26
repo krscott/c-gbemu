@@ -400,9 +400,11 @@ static void daa(u8 *value, u8 *flags) {
 }
 
 static bool cpu_check_jp_interrupt(Cpu *cpu, Bus *bus, u8 mask, u16 address) {
-    if ((bus->reg_if & bus->reg_ie & mask) == 0) return false;
+    if ((bus->high_byte_ram.data[FF_IF] & bus->high_byte_ram.data[FF_IE] &
+         mask) == 0)
+        return false;
 
-    bus->reg_if &= ~mask;
+    bus->high_byte_ram.data[FF_IF] &= ~mask;
 
     // Save address to call into. (See `interrupt_call_instruction[]`)
     split_u16(address, &cpu->jp_hi, &cpu->jp_lo);
@@ -440,10 +442,15 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         cpu->jp_hi = 0xAA;
         cpu->bus_reg = 0xAA;
 
-        // TODO: "halt bug": https://gbdev.io/pandocs/halt.html
+        // Check if any of the interrupt registers flags (bits 0-5) are both
+        // enabled (IE) and requested (IF).
+        bool interrupt_requested = bus->high_byte_ram.data[FF_IF] &
+                                   bus->high_byte_ram.data[FF_IE] & 0x1F;
 
+        // If halted, wait until interrupt
         if (cpu->halted) {
-            if (bus->reg_if & bus->reg_ie) {
+            // TODO: "halt bug": https://gbdev.io/pandocs/halt.html
+            if (interrupt_requested) {
                 cpu->halted = false;
             } else {
                 return;
@@ -451,23 +458,38 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
         };
 
         // Handle interrupts
-        if (cpu->ime && (bus->reg_if & bus->reg_ie)) {
+        if (cpu->ime && interrupt_requested) {
             // Check each interrupt for a jump in priority order
 
-            cpu_check_jp_interrupt(cpu, bus, INTR_VBLANK_MASK,
-                                   INTR_VBLANK_ADDR) ||
+            do {
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_VBLANK_MASK,
+                                           INTR_VBLANK_ADDR)) {
+                    break;
+                }
 
-                (cpu_check_jp_interrupt(cpu, bus, INTR_LCD_STAT_MASK,
-                                        INTR_LCD_STAT_ADDR)) ||
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_LCD_STAT_MASK,
+                                           INTR_LCD_STAT_ADDR)) {
+                    break;
+                }
 
-                (cpu_check_jp_interrupt(cpu, bus, INTR_TIMER_MASK,
-                                        INTR_TIMER_ADDR)) ||
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_TIMER_MASK,
+                                           INTR_TIMER_ADDR)) {
+                    break;
+                }
 
-                (cpu_check_jp_interrupt(cpu, bus, INTR_SERIAL_MASK,
-                                        INTR_SERIAL_ADDR)) ||
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_SERIAL_MASK,
+                                           INTR_SERIAL_ADDR)) {
+                    break;
+                }
 
-                (cpu_check_jp_interrupt(cpu, bus, INTR_JOYPAD_MASK,
-                                        INTR_JOYPAD_ADDR));
+                if (cpu_check_jp_interrupt(cpu, bus, INTR_JOYPAD_MASK,
+                                           INTR_JOYPAD_ADDR)) {
+                    break;
+                }
+
+                // All cases should have been covered
+                assert(false);
+            } while (0);
         }
 
         // IE sets IME after 1 instruction delay

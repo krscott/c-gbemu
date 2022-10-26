@@ -21,7 +21,7 @@ GbErr bus_init(Bus *bus) {
         err = ram_init(&bus->work_ram, WORK_RAM_SIZE);
         if (err) break;
 
-        err = ram_init(&bus->high_ram, HIGH_RAM_SIZE);
+        err = ram_init(&bus->high_byte_ram, HIGH_BYTE_RAM_SIZE);
         if (err) break;
 
         return OK;
@@ -34,7 +34,7 @@ void bus_deinit(Bus *bus) {
     rom_deinit(&bus->boot);
     cart_deinit(&bus->cart);
     ram_deinit(&bus->work_ram);
-    ram_deinit(&bus->high_ram);
+    ram_deinit(&bus->high_byte_ram);
 }
 
 GbErr bus_load_bootrom_from_buffer(Bus *bus, const u8 *buffer, size_t size) {
@@ -104,51 +104,13 @@ static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
         return 0;
     }
 
-    // 0xFF00..=0xFF7F I/O Registers
-    else if (address < 0xFF80) {
-        switch (address) {
-            case 0xFF01:
-                return bus->reg_sb;
-            case 0xFF02:
-                return bus->reg_sc;
-            case 0xFF04:
-                return bus->reg_div;
-            case 0xFF05:
-                return bus->reg_tima;
-            case 0xFF06:
-                return bus->reg_tma;
-            case 0xFF07:
-                return bus->reg_tac;
-            case 0xFF0F:
-                return bus->reg_if;
-        }
+    // 0xFF00..=0xFFFF Hardware registers and High RAM
+    assert(address >= 0xFF00);
 
-        if (address >= 0xFF10 && address <= 0xFF26) {
-            // Sound
-            // panicf("TODO: Sound $%04X", address);
-            return 0;
-        }
+    // Treat the whole block as RAM, and handle behaviors as needed.
+    u8 ff_address = address & 0xFF;
 
-        if (address >= 0xFF40 && address <= 0xFF4B) {
-            // LCD
-            // panicf("TODO: LCD $%04X", address);
-            return 0;
-        }
-
-        if (!debug_peek) panicf("TODO: I/O $%04X", address);
-        return 0;
-    }
-
-    // 0xFF80..=0xFFFE High RAM
-    else if (address < 0xFFFF) {
-        u16 internal_address = address - 0xFF80;
-        assert(internal_address < HIGH_RAM_SIZE);
-
-        return ram_read(&bus->high_ram, internal_address);
-    }
-
-    assert(address == 0xFFFF);
-    return bus->reg_ie;
+    return ram_read(&bus->high_byte_ram, ff_address);
 }
 
 u8 bus_read(const Bus *bus, u16 address) {
@@ -212,75 +174,43 @@ void bus_write(Bus *bus, u16 address, u8 value) {
         return;
     }
 
-    // 0xFF00..=0xFF7F I/O Registers
-    else if (address < 0xFF80) {
-        switch (address) {
-            case 0xFF01:
-                bus->reg_sb = value;
-                return;
-            case 0xFF02:
-                bus->reg_sc = value;
-                return;
-            case 0xFF04:
-                // Writing any value to 0xFF04 resets DIV to 0.
-                bus->reg_div = 0;
-                return;
-            case 0xFF05:
-                bus->reg_tima = value;
-                return;
-            case 0xFF06:
-                bus->reg_tma = value;
-                return;
-            case 0xFF07:
-                bus->reg_tac = value;
-                return;
-            case 0xFF0F:
-                bus->reg_if = value;
-                return;
-        }
+    // 0xFF00..=0xFFFF Hardware registers and High RAM
+    assert(address >= 0xFF00);
 
-        if (address >= 0xFF10 && address <= 0xFF26) {
-            // Sound
-            // panicf("TODO: Sound $%04X", address);
-            return;
-        }
+    // Treat the whole block as RAM, and handle behaviors as needed.
+    u8 ff_address = address & 0xFF;
 
-        if (address >= 0xFF40 && address <= 0xFF4B) {
-            // LCD
-            // panicf("TODO: LCD $%04X", address);
-            return;
-        }
+    switch (ff_address) {
+        case FF_TIMA:
+            // Any value resets DIV to 0.
+            value = 0;
+            break;
 
-        // panicf("TODO: I/O $%04X", address);
-        return;
+        case FF_BOOTDIS:
+            // Non-zero value disables bootrom
+            if (value) bus->is_bootrom_disabled = true;
+            break;
     }
 
-    // 0xFF80..=0xFFFE High RAM
-    else if (address < 0xFFFF) {
-        u16 internal_address = address - 0xFF80;
-        assert(internal_address < HIGH_RAM_SIZE);
-
-        ram_write(&bus->high_ram, internal_address, value);
-        return;
-    }
-
-    assert(address == 0xFFFF);
-    bus->reg_ie = value;
+    ram_write(&bus->high_byte_ram, ff_address, value);
+    return;
 }
 
 void bus_cycle(Bus *bus) {
     assert(bus);
     assert(bus->clocks % 4 == 0);
 
+    u8 *ram = bus->high_byte_ram.data;
+
     bus->clocks += 4;
 
     // Increment DIV
-    if (bus->clocks % 256 == 0) ++bus->reg_div;
+    if (bus->clocks % 256 == 0) ++ram[FF_DIV];
 
     bool inc_tima = false;
 
     // Increment TIMA
-    switch (bus->reg_tac % 3) {
+    switch (ram[FF_TAC] % 3) {
         case 0:
             inc_tima = bus->clocks % 1024 == 0;
             break;
@@ -298,29 +228,29 @@ void bus_cycle(Bus *bus) {
     }
 
     if (inc_tima) {
-        ++bus->reg_tima;
+        ++ram[FF_TIMA];
 
         // If TIMA overflows, request interrupt and copy TMA to TIMA
-        if (bus->reg_tima == 0) {
-            bus->reg_if |= INTR_TIMER_MASK;
-            bus->reg_tima = bus->reg_tma;
+        if (ram[FF_TIMA] == 0) {
+            ram[FF_IF] |= INTR_TIMER_MASK;
+            ram[FF_TIMA] = ram[FF_TMA];
         }
     }
 }
 
 bool bus_is_serial_transfer_requested(Bus *bus) {
-    return (bus->reg_sc & 0x80) != 0;
+    return (bus->high_byte_ram.data[FF_SC] & 0x80) != 0;
 }
 
 u8 bus_take_serial_byte(Bus *bus) {
     assert(bus_is_serial_transfer_requested(bus));
 
     // Clear transfer flag
-    bus->reg_sc &= ~0x80;
+    bus->high_byte_ram.data[FF_SC] &= ~0x80;
 
     // Set serial interrupt request
-    bus->reg_if |= INTR_SERIAL_MASK;
+    bus->high_byte_ram.data[FF_IF] |= INTR_SERIAL_MASK;
 
     // Return transfered data
-    return bus->reg_sb;
+    return bus->high_byte_ram.data[FF_SB];
 }
