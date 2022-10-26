@@ -110,6 +110,15 @@ static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
     // Treat the whole block as RAM, and handle behaviors as needed.
     u8 ff_address = address & 0xFF;
 
+    switch (ff_address) {
+        case FF_DIV_LO:
+            if (debug_peek) return bus->internal_timer << 2;
+            return 0xFF;
+
+        case FF_DIV:
+            return bus->internal_timer >> 6;
+    }
+
     return ram_read(&bus->high_byte_ram, ff_address);
 }
 
@@ -182,13 +191,19 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     switch (ff_address) {
         case FF_IF:
-            // Determined emperically (mooneye emu.)
-            value |= bus->high_byte_ram.data[FF_IF] & 0xE0;
+            value |= 0xE0;
             break;
 
-        case FF_TIMA:
+        case FF_DIV_LO:
+            return;  // Skip write--DIV is handled by Bus.internal_timer
+
+        case FF_DIV:
             // Any value resets DIV to 0.
-            value = 0;
+            bus->internal_timer = 0;
+            return;  // Skip write--DIV is handled by Bus.internal_timer
+
+        case FF_TAC:
+            value |= 0xF8;
             break;
 
         case FF_BOOTDIS:
@@ -203,34 +218,37 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
 void bus_cycle(Bus *bus) {
     assert(bus);
-    assert(bus->clocks % 4 == 0);
 
-    u8 *ram = bus->high_byte_ram.data;
+    u8 *const ram = bus->high_byte_ram.data;
 
-    bus->clocks += 4;
+    if (bus->load_tma_scheduled) {
+        bus->load_tma_scheduled = false;
+        ram[FF_IF] |= INTR_TIMER_MASK;
+        ram[FF_TIMA] = ram[FF_TMA];
+    }
 
-    // Increment DIV
-    u16 div = 1 + to_u16(ram[FF_DIV], ram[FF_DIV_LO]);
-    ram[FF_DIV] = high_byte(div);
-    ram[FF_DIV_LO] = low_byte(div);
+    // Increment timer 1 cycle
+    ++bus->internal_timer;
+
+    // DIV counts clocks, and there are 4 clocks per cycle
+    u16 div = bus->internal_timer * 4;
 
     // TAC bit 2 enables TIMA
     if ((ram[FF_TAC] & 4) != 0) {
-        bool inc_tima = false;
-
         // Increment TIMA
+        bool inc_tima;
         switch (ram[FF_TAC] % 3) {
             case 0:
-                inc_tima = bus->clocks % 1024 == 0;
+                inc_tima = div % 1024 == 0;
                 break;
             case 1:
-                inc_tima = bus->clocks % 16 == 0;
+                inc_tima = div % 16 == 0;
                 break;
             case 2:
-                inc_tima = bus->clocks % 64 == 0;
+                inc_tima = div % 64 == 0;
                 break;
             case 3:
-                inc_tima = bus->clocks % 256 == 0;
+                inc_tima = div % 256 == 0;
                 break;
             default:
                 assert(0);
@@ -241,8 +259,7 @@ void bus_cycle(Bus *bus) {
 
             // If TIMA overflows, request interrupt and copy TMA to TIMA
             if (ram[FF_TIMA] == 0) {
-                ram[FF_IF] |= INTR_TIMER_MASK;
-                ram[FF_TIMA] = ram[FF_TMA];
+                bus->load_tma_scheduled = true;
             }
         }
     }

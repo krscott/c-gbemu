@@ -114,8 +114,9 @@ typedef struct Bus {
     Ram work_ram;
     Ram high_byte_ram;
 
-    u16 clocks;
     bool is_bootrom_disabled;
+    bool load_tma_scheduled;
+    u16 internal_timer;
 } Bus;
 
 GbErr bus_init(Bus *bus) nodiscard;

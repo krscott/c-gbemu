@@ -15,7 +15,7 @@
 
 static const char *blargg_roms[] = {
     "roms/01-special.gb",
-    // "roms/02-interrupts.gb",
+    "roms/02-interrupts.gb",
     "roms/03-op sp,hl.gb",
     "roms/04-op r,imm.gb",
     "roms/05-op rp.gb",
@@ -78,7 +78,6 @@ static void test_cpu_jp(void) {
     // Read opcode
     cpu_cycle(&gb.cpu, &gb.bus);
     assert_eq_u8(gb.cpu.opcode, 0xC3);
-    assert_eq_u8(gb.cpu.cycle, 1);
     assert_eq_u8(gb.cpu.pc, 1);
 
     // Read address
@@ -288,8 +287,7 @@ static void test_blargg(void) {
 
         gb_boot_dmg(&gb);
 
-        for (size_t cycle = 0; cycle < BLARGG_MAX_CYCLES && !gb.cpu.halted;
-             ++cycle) {
+        for (size_t cycle = 0; cycle < BLARGG_MAX_CYCLES; ++cycle) {
             gb_step(&gb);
             if (0 == strcmp("Passed\n", gb.debug_serial_message)) {
                 goto test_blarg__next;

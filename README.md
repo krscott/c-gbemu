@@ -69,14 +69,14 @@ These clang-format settings are used for VSCode:
 ```
 [More info](https://clang.llvm.org/docs/ClangFormatStyleOptions.html)
 
-## Compliance
+## Acceptance Testing
 
 Run `make check` to run all tests.
 
 | Blargg Test           | Status |
 | --------------------- | :----: |
 | 01-special            |   ✅    |
-| 02-interrupts         |   ❌    |
+| 02-interrupts         |   ✅    |
 | 03-op sp,hl           |   ✅    |
 | 04-op r,imm           |   ✅    |
 | 05-op rp              |   ✅    |

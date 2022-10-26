@@ -8,7 +8,11 @@ static const u8 FFXX_DMG[] = {
     [0x00] = 0xCF,  // P1
     [0x01] = 0x00,  // SB
     [0x02] = 0x7E,  // SC
-    [0x04] = 0xAB,  // DIV
+
+    // Skip DIV--this is derived from bus.internal_timer
+    // [0x03] = 0x68,  // DIV_LO (guess based on mooneye)
+    // [0x04] = 0xAA,  // DIV (Pandocs: 0xAB, Mooneye: 0xAA)
+
     [0x05] = 0x00,  // TIMA
     [0x06] = 0x00,  // TMA
     [0x07] = 0xF8,  // TAC
@@ -130,6 +134,10 @@ void gb_boot_dmg(GameBoy *gb) {
 
     gb->bus.is_bootrom_disabled = true;
 
+    gb->bus.load_tma_scheduled = false;
+    // Full DIV counter. Matches mooneye, but different than pandocs?
+    gb->bus.internal_timer = 0x2A9A;
+
     memcpy_s(gb->bus.high_byte_ram.data, gb->bus.high_byte_ram.size, FFXX_DMG,
              sizeof(FFXX_DMG));
 }
@@ -171,6 +179,7 @@ void gb_step(GameBoy *gb) {
     assert(gb);
     do {
         cpu_cycle(&gb->cpu, &gb->bus);
+        bus_cycle(&gb->bus);
 
         gb_update_serial_message_buffer(gb);
     } while (gb->cpu.ucode_step != 0);

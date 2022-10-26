@@ -540,6 +540,7 @@ def op_instr(op: int) -> tuple[str, list[dict[str, Any]]]:
                 f"PUSH {PP_TARGET_STR[i]}",
                 [
                     {},
+                    {},
                     {"uop": "LD_R8_R8", "lhs": "BUS",
                         "rhs": hi, "io": "WRITE_SP_DEC"},
                     {"uop": "LD_R8_R8", "lhs": "BUS",

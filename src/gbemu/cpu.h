@@ -20,7 +20,6 @@ typedef struct Cpu {
     bool ime_scheduled;
 
     bool halted;
-    size_t cycle;
 
     bool is_jp_interrupt;
 

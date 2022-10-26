@@ -841,9 +841,6 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
             panicf("Unhandled condition case: %d", uinst->cond);
     }
 
-    ++cpu->cycle;
-    bus_cycle(bus);
-
     // Should never write to lower nibble of F
     assert((cpu->f & 0x0F) == 0);
 }
@@ -878,20 +875,28 @@ void cpu_print_trace(const Cpu *cpu, const Bus *bus) {
     char h = (cpu->f & FH) ? 'H' : '-';
     char c = (cpu->f & FC) ? 'C' : '-';
 
-    printf(
-        " ; %-14s| A:%02X F:%c%c%c%c BC:%02X%02X DE:%02X%02X HL:%02X%02X "
-        "SP:%04X",
-        mnemonic, cpu->a, z, n, h, c, cpu->b, cpu->c, cpu->d, cpu->e, cpu->h,
-        cpu->l, cpu->sp);
+    printf(" ; %-14s| A:%02X F:%c%c%c%c", mnemonic, cpu->a, z, n, h, c);
 
-#define print_addr(reg) \
-    printf(" $" #reg ":%02X", bus_debug_peek(bus, (0x##reg)))
+    // printf(
+    //     " BC:%02X%02X DE:%02X%02X HL:%02X%02X "
+    //     "SP:%04X",
+    //     cpu->b, cpu->c, cpu->d, cpu->e, cpu->h, cpu->l, cpu->sp);
 
-    // printf(" $FF83:%02X", bus_debug_peek(bus, 0xFF83));
-    print_addr(FF0F);
-    print_addr(FFFF);
+#define print_addr2(name, reg1, reg2)                              \
+    printf(" " #name ":%02X%02X", bus_debug_peek(bus, (0x##reg1)), \
+           bus_debug_peek(bus, (0x##reg2)))
+#define print_addr(name, reg) \
+    printf(" " #name ":%02X", bus_debug_peek(bus, (0x##reg)))
+
+    print_addr2(DIV, FF04, FF03);
+    print_addr(TIMA, FF05);
+    print_addr(TMA, FF06);
+    print_addr(TAC, FF07);
+    print_addr(IF, FF0F);
+    print_addr(IE, FFFF);
 
 #undef print_addr
+#undef print_addr2
 
     if (cpu->halted) {
         printf(" HALT");
