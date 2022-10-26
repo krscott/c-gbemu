@@ -181,6 +181,11 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     u8 ff_address = address & 0xFF;
 
     switch (ff_address) {
+        case FF_IF:
+            // Determined emperically (mooneye emu.)
+            value |= bus->high_byte_ram.data[FF_IF] & 0xE0;
+            break;
+
         case FF_TIMA:
             // Any value resets DIV to 0.
             value = 0;
@@ -205,35 +210,40 @@ void bus_cycle(Bus *bus) {
     bus->clocks += 4;
 
     // Increment DIV
-    if (bus->clocks % 256 == 0) ++ram[FF_DIV];
+    u16 div = 1 + to_u16(ram[FF_DIV], ram[FF_DIV_LO]);
+    ram[FF_DIV] = high_byte(div);
+    ram[FF_DIV_LO] = low_byte(div);
 
-    bool inc_tima = false;
+    // TAC bit 2 enables TIMA
+    if ((ram[FF_TAC] & 4) != 0) {
+        bool inc_tima = false;
 
-    // Increment TIMA
-    switch (ram[FF_TAC] % 3) {
-        case 0:
-            inc_tima = bus->clocks % 1024 == 0;
-            break;
-        case 1:
-            inc_tima = bus->clocks % 16 == 0;
-            break;
-        case 2:
-            inc_tima = bus->clocks % 64 == 0;
-            break;
-        case 3:
-            inc_tima = bus->clocks % 256 == 0;
-            break;
-        default:
-            assert(0);
-    }
+        // Increment TIMA
+        switch (ram[FF_TAC] % 3) {
+            case 0:
+                inc_tima = bus->clocks % 1024 == 0;
+                break;
+            case 1:
+                inc_tima = bus->clocks % 16 == 0;
+                break;
+            case 2:
+                inc_tima = bus->clocks % 64 == 0;
+                break;
+            case 3:
+                inc_tima = bus->clocks % 256 == 0;
+                break;
+            default:
+                assert(0);
+        }
 
-    if (inc_tima) {
-        ++ram[FF_TIMA];
+        if (inc_tima) {
+            ++ram[FF_TIMA];
 
-        // If TIMA overflows, request interrupt and copy TMA to TIMA
-        if (ram[FF_TIMA] == 0) {
-            ram[FF_IF] |= INTR_TIMER_MASK;
-            ram[FF_TIMA] = ram[FF_TMA];
+            // If TIMA overflows, request interrupt and copy TMA to TIMA
+            if (ram[FF_TIMA] == 0) {
+                ram[FF_IF] |= INTR_TIMER_MASK;
+                ram[FF_TIMA] = ram[FF_TMA];
+            }
         }
     }
 }

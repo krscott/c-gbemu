@@ -116,9 +116,9 @@ static void *emu_thread() {
         gb_step(&gb);
 
 #ifdef STOP_ON_BLARGG_TEST_END
-        if (0 == strcmp("Passed\n", gb.debug_serial_message) ||
-            0 == strcmp("Failed\n", gb.debug_serial_message) ||
-            0 == strcmp("Failed #2\n", gb.debug_serial_message)) {
+        if ((gb.cpu.pc == 0xC7F4 && gb.cpu.opcode == 0x18) ||
+            0 == strcmp("Passed\n", gb.debug_serial_message) ||
+            0 == strcmp("Failed\n", gb.debug_serial_message)) {
             gb.shutdown = true;
         }
 #endif

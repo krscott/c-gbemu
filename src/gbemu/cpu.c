@@ -19,9 +19,9 @@ typedef enum InterruptAddr {
     INTR_JOYPAD_ADDR = 0x60,
 } InterruptAddr;
 
-static u8 low_byte(u16 word) { return (u8)(word & 0xFF); }
-static u8 high_byte(u16 word) { return (u8)(word >> 8); }
-static u16 to_u16(u8 hi, u8 lo) { return (((u16)hi) << 8) | ((u16)lo); }
+// static u8 low_byte(u16 word) { return (u8)(word & 0xFF); }
+// static u8 high_byte(u16 word) { return (u8)(word >> 8); }
+// static u16 to_u16(u8 hi, u8 lo) { return (((u16)hi) << 8) | ((u16)lo); }
 static void split_u16(u16 value, u8 *hi, u8 *lo) {
     *hi = high_byte(value);
     *lo = low_byte(value);

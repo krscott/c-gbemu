@@ -28,3 +28,7 @@ typedef int64_t i64;
 
 /// Macro to get the length of fixed-size array
 #define array_len(arr) (sizeof(arr) / (sizeof(arr[0])))
+
+#define to_u16(hi, lo) ((((u16)(hi)&0xFF) << 8) | ((u16)(lo)&0xFF))
+#define high_byte(word) (((word) >> 8) & 0xFF)
+#define low_byte(word) ((word)&0xFF)

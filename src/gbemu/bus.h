@@ -20,7 +20,7 @@ typedef enum HighByteAddress {
     FF_JOY = 0x00,
     FF_SB = 0x01,
     FF_SC = 0x02,
-
+    FF_DIV_LO = 0x03,
     FF_DIV = 0x04,
     FF_TIMA = 0x05,
     FF_TMA = 0x06,
