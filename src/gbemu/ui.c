@@ -15,7 +15,7 @@ static const unsigned long tile_colors[4] = {
     0xFF000000,
 };
 
-static void delay_ms(u32 ms) { SDL_Delay(ms); }
+// static void delay_ms(u32 ms) { SDL_Delay(ms); }
 
 static void draw_tile(SDL_Surface *surface, GameBoy *gb, u16 vram_address,
                       u16 tile_index, int x, int y) {
@@ -24,8 +24,8 @@ static void draw_tile(SDL_Surface *surface, GameBoy *gb, u16 vram_address,
     for (int tile_y = 0; tile_y < 16; tile_y += 2) {
         u16 addr = vram_address + (tile_index * 16) + tile_y;
 
-        u8 bits_1 = bus_read(&gb->bus, addr);
-        u8 bits_0 = bus_read(&gb->bus, addr + 1);
+        u8 bits_1 = bus_peek(&gb->bus, addr);
+        u8 bits_0 = bus_peek(&gb->bus, addr + 1);
 
         for (int bit = 7; bit >= 0; --bit) {
             u8 mask = 1 << bit;
@@ -166,7 +166,7 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
             }
         }
 
-        delay_ms(8);
+        // delay_ms(8);
     }
 
 ui_main_exit:

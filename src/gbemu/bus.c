@@ -5,6 +5,9 @@
 #include "cart.h"
 #include "rom.h"
 
+static void dma_start(Bus *bus);
+static u16 dma_get_src_addr(const Bus *bus);
+
 GbErr bus_init(Bus *bus) {
     assert(bus);
     memset(bus, 0, sizeof(*bus));
@@ -56,7 +59,7 @@ GbErr bus_load_cart_from_file(Bus *bus, const char *cart_filename) {
     return cart_init(&bus->cart, cart_filename);
 }
 
-static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
+static u8 bus_read_internal(const Bus *bus, u16 address, bool debug_peek) {
     assert(bus);
 
     // 0x0000..=0x3FFF Boot ROM bank 0
@@ -88,7 +91,7 @@ static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
     // 0xE000..=0xFDFF Mirror RAM
     else if (address < 0xFE00) {
         if (!debug_peek && address >= 0xE000) {
-            errorf("Attempting to read Mirror RAM at $%04X", address);
+            infof("Reading Mirror RAM at $%04X", address);
         }
 
         // Modulus to "reflect" mirror RAM
@@ -97,13 +100,15 @@ static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
+        // OAM is inactive during DMA
+        if (bus->is_dma_active) return 0xFF;
         return ppu_read(&bus->ppu, address);
     }
 
     // 0xFEA0..=0xFEFF Not Usable
     else if (address < 0xFF00) {
-        if (!debug_peek) panicf("Prohibitied memory access $%04X", address);
-        return 0;
+        // if (!debug_peek) infof("Unused memory read $%04X", address);
+        return 0xFF;
     }
 
     // 0xFF00..=0xFFFF Hardware registers and High RAM
@@ -119,23 +124,46 @@ static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
         case FF_DIV:
             return bus->internal_timer >> 6;
+
+        case FF_LY:
+            // HACK: Make sure comparisons match eventually
+            // TODO
+            return ((Bus *)bus)->ly++;
     }
 
     return ram_read(&bus->high_byte_ram, ff_address);
 }
 
 u8 bus_read(const Bus *bus, u16 address) {
-    u8 out = bus_read_helper(bus, address, false);
+    assert(bus);
+
+    // Accessing memory outside of HRAM is undefined during DMA
+    if (bus->is_dma_active && !(0xFF80 <= address && address <= 0xFFFE)) {
+        errorf("Illegal bus read during DMA: $%04X %02X", address,
+               bus->dma_index);
+        // Address is already set this cycle
+        // address = dma_get_src_addr(bus);
+    }
+
+    u8 out = bus_read_internal(bus, address, false);
     // printf("  %04X R $%02X\n", address, out);
     return out;
 }
 
-u8 bus_debug_peek(const Bus *bus, u16 address) {
-    return bus_read_helper(bus, address, true);
+u8 bus_peek(const Bus *bus, u16 address) {
+    return bus_read_internal(bus, address, true);
 }
 
 void bus_write(Bus *bus, u16 address, u8 value) {
     assert(bus);
+
+    // Accessing memory outside of HRAM is undefined during DMA
+    if (bus->is_dma_active && !(0xFF80 <= address && address <= 0xFFFE)) {
+        errorf("Illegal bus write during DMA: $%04X", address);
+        // TODO: What should happen?
+        return;
+    }
+
     // printf("  %04X W $%02X\n", address, value);
 
     // 0x0000..=0x3FFF Cart ROM bank 0
@@ -165,7 +193,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     // 0xE000..=0xFDFF Mirror RAM
     else if (address < 0xFE00) {
         if (address >= 0xE000) {
-            errorf("Attempting to write Mirror RAM at $%04X", address);
+            infof("Writing Mirror RAM at $%04X", address);
         }
 
         // Modulus to "reflect" mirror RAM
@@ -175,13 +203,16 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
+        // OAM is inactive during DMA
+        if (bus->is_dma_active) return;
+
         ppu_write(&bus->ppu, address, value);
         return;
     }
 
     // 0xFEA0..=0xFEFF Not Usable
     else if (address < 0xFF00) {
-        panicf("Prohibitied memory access $%04X", address);
+        // infof("Unused memory write $%04X", address);
         return;
     }
 
@@ -208,6 +239,10 @@ void bus_write(Bus *bus, u16 address, u8 value) {
             value |= 0xF8;
             break;
 
+        case FF_DMA:
+            dma_start(bus);
+            break;
+
         case FF_BOOTDIS:
             // Non-zero value disables bootrom
             if (value) bus->is_bootrom_disabled = true;
@@ -218,7 +253,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     return;
 }
 
-void bus_cycle(Bus *bus) {
+static void timer_cycle(Bus *bus) {
     assert(bus);
 
     u8 *const ram = bus->high_byte_ram.data;
@@ -265,6 +300,52 @@ void bus_cycle(Bus *bus) {
             }
         }
     }
+}
+
+static void dma_start(Bus *bus) {
+    bus->dma_delay_countdown = 2;
+    bus->dma_index = 0;
+}
+
+static u16 dma_get_src_addr(const Bus *bus) {
+    return to_u16(bus->high_byte_ram.data[FF_DMA], bus->dma_index);
+}
+
+static void dma_cycle(Bus *bus) {
+    assert(bus);
+
+    // If DMA is sheduled, decrement countdown
+    if (bus->dma_delay_countdown) {
+        --bus->dma_delay_countdown;
+
+        if (bus->dma_delay_countdown == 0) {
+            bus->is_dma_active = true;
+        }
+    }
+
+    if (!bus->is_dma_active) return;
+
+    // Get source address
+    u16 src_addr = dma_get_src_addr(bus);
+
+    // Get destination address in OAM table (0xFE00..=0xFE9F)
+    assert(bus->dma_index <= 0x9F);
+    u16 dest_addr = to_u16(0xFE, bus->dma_index);
+
+    // Copy data from src to dest
+    // (Use bus_read_internal() to skip DMA check in bus_read())
+    ppu_write(&bus->ppu, dest_addr, bus_read_internal(bus, src_addr, false));
+
+    // Increment DMA source address
+    ++bus->dma_index;
+
+    // If reached the end of OAM table, then stop DMA
+    bus->is_dma_active = bus->dma_index <= 0x9F;
+}
+
+void bus_cycle(Bus *bus) {
+    dma_cycle(bus);
+    timer_cycle(bus);
 }
 
 bool bus_is_serial_transfer_requested(Bus *bus) {

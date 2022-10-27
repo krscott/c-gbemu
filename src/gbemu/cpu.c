@@ -846,14 +846,14 @@ void cpu_cycle(Cpu *cpu, Bus *bus) {
 }
 
 void cpu_print_trace(const Cpu *cpu, const Bus *bus) {
-    u8 pc0 = bus_debug_peek(bus, cpu->pc);
+    u8 pc0 = bus_peek(bus, cpu->pc);
     const char *mnemonic = instructions_get_mnemonic(pc0);
     u8 len = instructions_get_length(pc0);
 
     printf("%04X: %02X", cpu->pc, pc0);
 
     if (len > 1) {
-        u8 pc1 = bus_debug_peek(bus, cpu->pc + 1);
+        u8 pc1 = bus_peek(bus, cpu->pc + 1);
 
         if (pc0 == 0xCB) {
             mnemonic = instructions_get_prefix_mnemonic(pc1);
@@ -864,7 +864,7 @@ void cpu_print_trace(const Cpu *cpu, const Bus *bus) {
         printf("   ");
     }
     if (len > 2) {
-        u8 pc2 = bus_debug_peek(bus, cpu->pc + 2);
+        u8 pc2 = bus_peek(bus, cpu->pc + 2);
         printf(" %02X", pc2);
     } else {
         printf("   ");
@@ -877,23 +877,25 @@ void cpu_print_trace(const Cpu *cpu, const Bus *bus) {
 
     printf(" ; %-14s| A:%02X F:%c%c%c%c", mnemonic, cpu->a, z, n, h, c);
 
-    // printf(
-    //     " BC:%02X%02X DE:%02X%02X HL:%02X%02X "
-    //     "SP:%04X",
-    //     cpu->b, cpu->c, cpu->d, cpu->e, cpu->h, cpu->l, cpu->sp);
+    printf(
+        " BC:%02X%02X DE:%02X%02X HL:%02X%02X "
+        "SP:%04X",
+        cpu->b, cpu->c, cpu->d, cpu->e, cpu->h, cpu->l, cpu->sp);
 
-#define print_addr2(name, reg1, reg2)                              \
-    printf(" " #name ":%02X%02X", bus_debug_peek(bus, (0x##reg1)), \
-           bus_debug_peek(bus, (0x##reg2)))
+#define print_addr2(name, reg1, reg2)                        \
+    printf(" " #name ":%02X%02X", bus_peek(bus, (0x##reg1)), \
+           bus_peek(bus, (0x##reg2)))
 #define print_addr(name, reg) \
-    printf(" " #name ":%02X", bus_debug_peek(bus, (0x##reg)))
+    printf(" " #name ":%02X", bus_peek(bus, (0x##reg)))
 
-    print_addr2(DIV, FF04, FF03);
-    print_addr(TIMA, FF05);
-    print_addr(TMA, FF06);
-    print_addr(TAC, FF07);
-    print_addr(IF, FF0F);
-    print_addr(IE, FFFF);
+    print_addr(DMA, FF46);
+
+    // print_addr2(DIV, FF04, FF03);
+    // print_addr(TIMA, FF05);
+    // print_addr(TMA, FF06);
+    // print_addr(TAC, FF07);
+    // print_addr(IF, FF0F);
+    // print_addr(IE, FFFF);
 
 #undef print_addr
 #undef print_addr2

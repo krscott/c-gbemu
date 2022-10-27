@@ -74,7 +74,7 @@ typedef enum HighByteAddress {
     FF_SCX = 0x43,
     FF_LY = 0x44,
     FF_LYC = 0x45,
-
+    FF_DMA = 0x46,
     FF_BGP = 0x47,
     FF_OBP0 = 0x48,
     FF_OBP1 = 0x49,
@@ -119,6 +119,12 @@ typedef struct Bus {
     bool is_bootrom_disabled;
     bool load_tma_scheduled;
     u16 internal_timer;
+
+    bool is_dma_active;
+    u8 dma_delay_countdown;
+    u8 dma_index;
+
+    u8 ly;
 } Bus;
 
 GbErr bus_init(Bus *bus) nodiscard;
@@ -155,7 +161,7 @@ u8 bus_read(const Bus *bus, u16 address);
 /// @param bus non-NULL
 /// @param address
 /// @return byte at the given address
-u8 bus_debug_peek(const Bus *bus, u16 address);
+u8 bus_peek(const Bus *bus, u16 address);
 
 /// @brief Write a byte to the bus
 /// @param bus non-NULL

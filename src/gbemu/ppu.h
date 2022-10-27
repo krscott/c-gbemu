@@ -11,7 +11,7 @@ typedef struct Ppu {
     Ram oam;
 } Ppu;
 
-GbErr ppu_init(Ppu *ppu);
+GbErr ppu_init(Ppu *ppu) nodiscard;
 void ppu_deinit(Ppu *ppu);
 
 u8 ppu_read(const Ppu *ppu, u16 address);
