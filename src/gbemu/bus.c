@@ -18,6 +18,9 @@ GbErr bus_init(Bus *bus) {
         err = cart_init_none(&bus->cart);
         if (err) break;
 
+        err = ppu_init(&bus->ppu);
+        if (err) break;
+
         err = ram_init(&bus->work_ram, WORK_RAM_SIZE);
         if (err) break;
 
@@ -33,6 +36,7 @@ GbErr bus_init(Bus *bus) {
 void bus_deinit(Bus *bus) {
     rom_deinit(&bus->boot);
     cart_deinit(&bus->cart);
+    ppu_deinit(&bus->ppu);
     ram_deinit(&bus->work_ram);
     ram_deinit(&bus->high_byte_ram);
 }
@@ -68,8 +72,7 @@ static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0x8000..=0x9FFF VRAM
     else if (address < 0xA000) {
-        if (!debug_peek) panicf("TODO: VRAM $%04X", address);
-        return 0;
+        return ppu_read(&bus->ppu, address);
     }
 
     // 0xA000..=0xBFFF External RAM
@@ -94,8 +97,7 @@ static u8 bus_read_helper(const Bus *bus, u16 address, bool debug_peek) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
-        if (!debug_peek) panicf("TODO: OAM $%04X", address);
-        return 0;
+        return ppu_read(&bus->ppu, address);
     }
 
     // 0xFEA0..=0xFEFF Not Usable
@@ -139,13 +141,13 @@ void bus_write(Bus *bus, u16 address, u8 value) {
     // 0x0000..=0x3FFF Cart ROM bank 0
     // 0x4000..=0x7FFF Cart ROM bank N
     if (address < 0x8000) {
-        panicf("TODO: cart_write $%04X", address);
+        cart_write(&bus->cart, address, value);
         return;
     }
 
     // 0x8000..=0x9FFF VRAM
     else if (address < 0xA000) {
-        // panicf("TODO: VRAM $%04X", address);
+        ppu_write(&bus->ppu, address, value);
         return;
     }
 
@@ -173,7 +175,7 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
     // 0xFE00..=FE9F Sprite attribute table (OAM)
     else if (address < 0xFEA0) {
-        panicf("TODO: OAM $%04X", address);
+        ppu_write(&bus->ppu, address, value);
         return;
     }
 

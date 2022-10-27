@@ -2,6 +2,7 @@
 
 #include "cart.h"
 #include "common.h"
+#include "ppu.h"
 #include "ram.h"
 #include "rom.h"
 
@@ -111,6 +112,7 @@ typedef enum HighByteAddress {
 typedef struct Bus {
     Rom boot;
     Cartridge cart;
+    Ppu ppu;
     Ram work_ram;
     Ram high_byte_ram;
 

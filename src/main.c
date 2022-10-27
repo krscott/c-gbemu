@@ -11,7 +11,7 @@
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
-#define STOP_ON_BLARGG_TEST_END
+// #define STOP_ON_BLARGG_TEST_END
 
 typedef struct Opts {
     const char *rom_filename;
