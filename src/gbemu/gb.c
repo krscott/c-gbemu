@@ -46,8 +46,8 @@ static const u8 FFXX_DMG[] = {
     [0x45] = 0x00,  // LYC
     [0x46] = 0xFF,  // DMA
     [0x47] = 0xFC,  // BGP
-    [0x48] = 0x00,  // OBP0 *
-    [0x49] = 0x00,  // OBP1 *
+    [0x48] = 0xFF,  // OBP0 *
+    [0x49] = 0xFF,  // OBP1 *
     [0x4A] = 0x00,  // WY
     [0x4B] = 0x00,  // WX
     [0x4D] = 0xFF,  // KEY1
@@ -180,6 +180,7 @@ void gb_step(GameBoy *gb) {
     do {
         cpu_cycle(&gb->cpu, &gb->bus);
         bus_cycle(&gb->bus);
+        ppu_cycle(&gb->bus.ppu, &gb->bus.high_byte_ram);
 
         gb_update_serial_message_buffer(gb);
     } while (gb->cpu.ucode_step != 0);
@@ -197,3 +198,5 @@ void gb_print_trace(const GameBoy *gb) {
     assert(gb);
     cpu_print_trace(&gb->cpu, &gb->bus);
 }
+
+u32 gb_get_frame_count(const GameBoy *gb) { return gb->bus.ppu.frame_count; }

@@ -24,6 +24,7 @@ typedef struct GameBoy {
     u16 debug_serial_message_index;
     /// @brief Record of transmitted serial data ASCII characters.
     char debug_serial_message[0x100];
+
 } GameBoy;
 
 GbErr gb_init(GameBoy *gb) nodiscard;
@@ -67,3 +68,5 @@ void gb_run_until_halt(GameBoy *gb);
 /// @brief Print part of the current state of the system
 /// @param gb non-NULL
 void gb_print_trace(const GameBoy *gb);
+
+u32 gb_get_frame_count(const GameBoy *gb);

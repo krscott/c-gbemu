@@ -1,8 +1,10 @@
 
 #include <SDL2/SDL.h>
 #include <pthread.h>
+#include <pthread_time.h>
 #include <stdatomic.h>
 #include <stdio.h>
+#include <windows.h>
 
 #include "gbemu/ui.h"
 
@@ -12,6 +14,11 @@
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
 // #define STOP_ON_BLARGG_TEST_END
+
+// #define TARGET_FRAME_TIME_US (1000000 / 60)
+#define TARGET_FRAME_TIME_US 1
+
+#define FPS_UPDATE_TIME_US 1000000
 
 typedef struct Opts {
     const char *rom_filename;
@@ -104,28 +111,98 @@ static void opts_parse(Opts *opts, int argc, char *args[]) {
     }
 }
 
-static void *emu_thread() {
-    bool shutdown = false;
-    while (!shutdown) {
-        pthread_mutex_lock(&gb_mutex);
+// static u32 delta_time_ms(struct timespec start, struct timespec end) {
+//     return (end.tv_sec - start.tv_sec) * 1000 +
+//            (end.tv_nsec - start.tv_nsec) / 1000000L;
+// }
 
-        if (opts.trace) {
-            gb_print_trace(&gb);
+static size_t delta_time_us(struct timespec start, struct timespec end) {
+    return (end.tv_sec - start.tv_sec) * 1000000 +
+           (end.tv_nsec - start.tv_nsec) / 1000L;
+}
+
+static void spin_us(size_t us) {
+    struct timespec start;
+    struct timespec current;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &start) == -1) {
+        panic("clock_gettime failed");
+    }
+
+    do {
+        if (clock_gettime(CLOCK_MONOTONIC, &current) == -1) {
+            panic("clock_gettime failed");
         }
+    } while (delta_time_us(start, current) < us);
+}
 
-        gb_step(&gb);
+static void *emu_thread() {
+    Sleep(100);
+
+    struct timespec prev_time;
+    struct timespec time;
+    u32 frame_counter_start_frames = 0;
+
+    if (clock_gettime(CLOCK_MONOTONIC, &prev_time) == -1) {
+        panic("clock_gettime failed");
+    }
+    struct timespec frame_counter_start = prev_time;
+
+    while (!gb.shutdown) {
+        u32 prev_frame_count;
+        u32 frame_count;
+
+        pthread_mutex_lock(&gb_mutex);
+        {
+            // Loop until next frame
+            if (opts.trace) {
+                gb_print_trace(&gb);
+            }
+
+            prev_frame_count = gb_get_frame_count(&gb);
+            gb_step(&gb);
+            frame_count = gb_get_frame_count(&gb);
 
 #ifdef STOP_ON_BLARGG_TEST_END
-        if ((gb.cpu.pc == 0xC7F4 && gb.cpu.opcode == 0x18) ||
-            0 == strcmp("Passed\n", gb.debug_serial_message) ||
-            0 == strcmp("Failed\n", gb.debug_serial_message)) {
-            gb.shutdown = true;
-        }
+            if ((gb.cpu.pc == 0xC7F4 && gb.cpu.opcode == 0x18) ||
+                0 == strcmp("Passed\n", gb.debug_serial_message) ||
+                0 == strcmp("Failed\n", gb.debug_serial_message)) {
+                gb.shutdown = true;
+            }
 #endif
-
-        shutdown = gb.shutdown;
-
+        }
         pthread_mutex_unlock(&gb_mutex);
+
+        if (frame_count != prev_frame_count) {
+            if (clock_gettime(CLOCK_MONOTONIC, &time) == -1) {
+                panic("clock_gettime failed");
+            }
+
+            size_t delta_us = delta_time_us(prev_time, time);
+
+            if (delta_us < TARGET_FRAME_TIME_US) {
+                // Limit frame time
+                // printf("Time %d Delay %d ms\n", time_ms - prev_time_ms,
+                //        TARGET_FRAME_TIME_MS - (time_ms - prev_time_ms));
+
+                spin_us(TARGET_FRAME_TIME_US - delta_us);
+                // spin_ms(1);
+            }
+            prev_time = time;
+
+            size_t frame_count_delta_us =
+                delta_time_us(frame_counter_start, time);
+            if (frame_count_delta_us >= FPS_UPDATE_TIME_US) {
+                float fps = 1000000. *
+                            (frame_count - frame_counter_start_frames) /
+                            frame_count_delta_us;
+
+                frame_counter_start = time;
+                frame_counter_start_frames = frame_count;
+
+                printf("FPS: %f\n", fps);
+            }
+        }
     }
     return NULL;
 }

@@ -124,11 +124,6 @@ static u8 bus_read_internal(const Bus *bus, u16 address, bool debug_peek) {
 
         case FF_DIV:
             return bus->internal_timer >> 6;
-
-        case FF_LY:
-            // HACK: Make sure comparisons match eventually
-            // TODO
-            return ((Bus *)bus)->ly++;
     }
 
     return ram_read(&bus->high_byte_ram, ff_address);
@@ -241,6 +236,16 @@ void bus_write(Bus *bus, u16 address, u8 value) {
 
         case FF_DMA:
             dma_start(bus);
+            break;
+
+        case FF_BGP:
+            lcd_set_palette(&bus->lcd, PLT_BG, value);
+            break;
+        case FF_OBP0:
+            lcd_set_palette(&bus->lcd, PLT_SP1, value);
+            break;
+        case FF_OBP1:
+            lcd_set_palette(&bus->lcd, PLT_SP2, value);
             break;
 
         case FF_BOOTDIS:

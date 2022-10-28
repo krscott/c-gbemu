@@ -2,6 +2,7 @@
 
 #include "cart.h"
 #include "common.h"
+#include "lcd.h"
 #include "ppu.h"
 #include "ram.h"
 #include "rom.h"
@@ -124,7 +125,7 @@ typedef struct Bus {
     u8 dma_delay_countdown;
     u8 dma_index;
 
-    u8 ly;
+    Lcd lcd;
 } Bus;
 
 GbErr bus_init(Bus *bus) nodiscard;

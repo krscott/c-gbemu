@@ -43,3 +43,21 @@ void ram_write(Ram *ram, size_t address, u8 value) {
     //       ram->data[address]);
     ram->data[address % ram->size] = value;
 }
+
+// void ram_set_bit(Ram *ram, size_t address, u8 bit) {
+//     assert(ram);
+//     assert(ram->data);
+//     assert(address < ram->size);
+//     assert(bit < 8);
+
+//     ram->data[address % ram->size] |= 1 << bit;
+// }
+
+// void ram_clear_bit(Ram *ram, size_t address, u8 bit) {
+//     assert(ram);
+//     assert(ram->data);
+//     assert(address < ram->size);
+//     assert(bit < 8);
+
+//     ram->data[address % ram->size] &= ~(1 << bit);
+// }

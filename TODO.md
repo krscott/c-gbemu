@@ -11,3 +11,4 @@
 - [ ] Standardize bus registers
   - Union: array access + field access?
 - [ ] Make UI state a struct
+- [ ] video_buffer fixed-size struct
