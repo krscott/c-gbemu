@@ -15,8 +15,8 @@
 
 // #define STOP_ON_BLARGG_TEST_END
 
-// #define TARGET_FRAME_TIME_US (1000000 / 60)
-#define TARGET_FRAME_TIME_US 1
+#define TARGET_FRAME_TIME_US (1000000 / 60)
+// #define TARGET_FRAME_TIME_US 1
 
 #define FPS_UPDATE_TIME_US 1000000
 
@@ -111,15 +111,20 @@ static void opts_parse(Opts *opts, int argc, char *args[]) {
     }
 }
 
-// static u32 delta_time_ms(struct timespec start, struct timespec end) {
-//     return (end.tv_sec - start.tv_sec) * 1000 +
-//            (end.tv_nsec - start.tv_nsec) / 1000000L;
-// }
+static size_t delta_time_ms(struct timespec start, struct timespec end) {
+    return (end.tv_sec - start.tv_sec) * 1000 +
+           (end.tv_nsec - start.tv_nsec) / 1000000L;
+}
 
 static size_t delta_time_us(struct timespec start, struct timespec end) {
     return (end.tv_sec - start.tv_sec) * 1000000 +
            (end.tv_nsec - start.tv_nsec) / 1000L;
 }
+
+// static size_t delta_time_s(struct timespec start, struct timespec end) {
+//     return (end.tv_sec - start.tv_sec) +
+//            (end.tv_nsec - start.tv_nsec) / 1000000000L;
+// }
 
 static void spin_us(size_t us) {
     struct timespec start;
@@ -147,6 +152,7 @@ static void *emu_thread() {
         panic("clock_gettime failed");
     }
     struct timespec frame_counter_start = prev_time;
+    struct timespec t0 = prev_time;
 
     while (!gb.shutdown) {
         u32 prev_frame_count;
@@ -162,6 +168,9 @@ static void *emu_thread() {
             prev_frame_count = gb_get_frame_count(&gb);
             gb_step(&gb);
             frame_count = gb_get_frame_count(&gb);
+
+            assert(frame_count == prev_frame_count + 1 ||
+                   frame_count == prev_frame_count);
 
 #ifdef STOP_ON_BLARGG_TEST_END
             if ((gb.cpu.pc == 0xC7F4 && gb.cpu.opcode == 0x18) ||
@@ -185,23 +194,30 @@ static void *emu_thread() {
                 // printf("Time %d Delay %d ms\n", time_ms - prev_time_ms,
                 //        TARGET_FRAME_TIME_MS - (time_ms - prev_time_ms));
 
+                // Sleep((TARGET_FRAME_TIME_US - delta_us) / 1000);
                 spin_us(TARGET_FRAME_TIME_US - delta_us);
-                // spin_ms(1);
+
+                // Re-get time including delay
+                if (clock_gettime(CLOCK_MONOTONIC, &time) == -1) {
+                    panic("clock_gettime failed");
+                }
+                delta_us = delta_time_us(prev_time, time);
             }
-            prev_time = time;
 
             size_t frame_count_delta_us =
                 delta_time_us(frame_counter_start, time);
             if (frame_count_delta_us >= FPS_UPDATE_TIME_US) {
-                float fps = 1000000. *
-                            (frame_count - frame_counter_start_frames) /
-                            frame_count_delta_us;
+                u32 dframes = frame_count - frame_counter_start_frames;
+                float fps = 1000000. * dframes / frame_count_delta_us;
 
                 frame_counter_start = time;
                 frame_counter_start_frames = frame_count;
 
-                printf("FPS: %f\n", fps);
+                printf("Time: %lld ms Frame: %d FPS: %f\n",
+                       delta_time_ms(t0, time), frame_count, fps);
             }
+
+            prev_time = time;
         }
     }
     return NULL;

@@ -95,6 +95,7 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
 
     int err = 0;
     bool shutdown = false;
+    u32 prev_frame = -1;
 
     // Initialize SDL windows
 
@@ -137,16 +138,23 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
     while (!shutdown) {
         pthread_mutex_lock(gb_mutex);
         {
-            update_debug_window(debug_renderer, debug_texture, debug_screen,
-                                gb);
+            // Only call UI update if the frame changes
+            u32 frame_count = gb_get_frame_count(gb);
 
-            // TODO Main window
-            {
-                // Fill the surface purple
-                SDL_FillRect(screen, NULL,
-                             SDL_MapRGB(screen->format, 0x33, 0x00, 0x33));
+            if (prev_frame != frame_count) {
+                prev_frame = frame_count;
 
-                SDL_UpdateWindowSurface(window);
+                update_debug_window(debug_renderer, debug_texture, debug_screen,
+                                    gb);
+
+                // TODO Main window
+                {
+                    // Fill the surface purple
+                    SDL_FillRect(screen, NULL,
+                                 SDL_MapRGB(screen->format, 0x33, 0x00, 0x33));
+
+                    SDL_UpdateWindowSurface(window);
+                }
             }
 
             // Detect shutdown
@@ -164,7 +172,7 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
             }
         }
 
-        SDL_Delay(8);
+        SDL_Delay(1);
     }
 
 ui_main_exit:

@@ -3,6 +3,7 @@
 #include <string.h>
 
 // TODO: Move this to another file
+// TODO: use HighByteAddress enum values for addresses
 // See table: https://gbdev.io/pandocs/Power_Up_Sequence.html
 static const u8 FFXX_DMG[] = {
     [0x00] = 0xCF,  // P1

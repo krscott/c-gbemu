@@ -135,6 +135,7 @@ static void ppu_tick(Ppu *ppu, Ram *hwreg) {
 
                 if (reg[FF_LY] >= LINES_PER_FRAME) {
                     reg[FF_LY] = 0;
+
                     set_stat_mode(reg, MODE_OAM);
                 }
             }
