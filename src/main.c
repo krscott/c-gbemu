@@ -13,7 +13,7 @@
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
-// #define STOP_ON_BLARGG_TEST_END
+#define STOP_ON_BLARGG_TEST_END
 
 #define TARGET_FRAME_TIME_US (1000000 / 60)
 // #define TARGET_FRAME_TIME_US 1

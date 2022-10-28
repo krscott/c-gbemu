@@ -126,6 +126,8 @@ static void ppu_tick(Ppu *ppu, Ram *hwreg) {
                 } else {
                     set_stat_mode(reg, MODE_OAM);
                 }
+
+                ppu->line_ticks = 0;
             }
             break;
 
