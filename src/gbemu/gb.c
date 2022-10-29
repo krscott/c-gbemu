@@ -147,7 +147,7 @@ static void gb_update_serial_message_buffer(GameBoy *gb) {
     if (bus_is_serial_transfer_requested(&gb->bus)) {
         char c = bus_take_serial_byte(&gb->bus);
 
-        if (c) {
+        if (c && gb->enable_print_debug_serial_message) {
             // Make sure we have room for null terminator
             assert(gb->debug_serial_message_index <
                    array_len(gb->debug_serial_message) - 1);
@@ -181,7 +181,6 @@ void gb_step(GameBoy *gb) {
     do {
         cpu_cycle(&gb->cpu, &gb->bus);
         bus_cycle(&gb->bus);
-        ppu_cycle(&gb->bus.ppu, &gb->bus.high_byte_ram);
 
         gb_update_serial_message_buffer(gb);
     } while (gb->cpu.ucode_step != 0);

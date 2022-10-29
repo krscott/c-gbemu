@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "cart.h"
+#include "ppu_pipeline.h"
 #include "rom.h"
 
 static void dma_start(Bus *bus);
@@ -134,7 +135,8 @@ u8 bus_read(const Bus *bus, u16 address) {
 
     // Accessing memory outside of HRAM is undefined during DMA
     if (bus->is_dma_active && !(0xFF80 <= address && address <= 0xFFFE)) {
-        errorf("Illegal bus read during DMA: $%04X %02X", address,
+        fflush(stdout);
+        errorf("Illegal bus read at $%04X during DMA index $%02X", address,
                bus->dma_index);
         // Address is already set this cycle
         // address = dma_get_src_addr(bus);
@@ -308,6 +310,11 @@ static void timer_cycle(Bus *bus) {
 }
 
 static void dma_start(Bus *bus) {
+    if (bus->is_dma_active) {
+        error("DMA started while already active");
+    }
+
+    bus->is_dma_active = false;
     bus->dma_delay_countdown = 2;
     bus->dma_index = 0;
 }
@@ -345,12 +352,13 @@ static void dma_cycle(Bus *bus) {
     ++bus->dma_index;
 
     // If reached the end of OAM table, then stop DMA
-    bus->is_dma_active = bus->dma_index <= 0x9F;
+    bus->is_dma_active = bus->dma_index < 0xA0;
 }
 
 void bus_cycle(Bus *bus) {
     dma_cycle(bus);
     timer_cycle(bus);
+    bus_ppu_cycle(bus);
 }
 
 bool bus_is_serial_transfer_requested(Bus *bus) {

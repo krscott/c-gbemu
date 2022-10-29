@@ -20,6 +20,9 @@ typedef struct GameBoy {
     // Serial message is for debugging Blargg tests.
     // TODO: Move debug_serial* to separate module
 
+    /// @brief enable printing debug serial message
+    bool enable_print_debug_serial_message;
+
     /// @brief Index into debug_serial_message.
     u16 debug_serial_message_index;
     /// @brief Record of transmitted serial data ASCII characters.
@@ -69,4 +72,5 @@ void gb_run_until_halt(GameBoy *gb);
 /// @param gb non-NULL
 void gb_print_trace(const GameBoy *gb);
 
+u32 gb_get_frame_count(const GameBoy *gb);
 u32 gb_get_frame_count(const GameBoy *gb);

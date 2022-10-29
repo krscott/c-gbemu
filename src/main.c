@@ -13,7 +13,8 @@
 
 #define eprintf(...) fprintf(stderr, __VA_ARGS__)
 
-#define STOP_ON_BLARGG_TEST_END
+// Define to make emulator exit if Blargg test ends
+// #define STOP_ON_BLARGG_TEST_END
 
 #define TARGET_FRAME_TIME_US (1000000 / 60)
 // #define TARGET_FRAME_TIME_US 1
@@ -213,8 +214,10 @@ static void *emu_thread() {
                 frame_counter_start = time;
                 frame_counter_start_frames = frame_count;
 
-                printf("Time: %lld ms Frame: %d FPS: %f\n",
-                       delta_time_ms(t0, time), frame_count, fps);
+                if (opts.verbose) {
+                    printf("Time: %lld ms Frame: %d FPS: %f\n",
+                           delta_time_ms(t0, time), frame_count, fps);
+                }
             }
 
             prev_time = time;
@@ -227,6 +230,10 @@ int main(int argc, char *argv[]) {
     opts_parse(&opts, argc, argv);
 
     err_exit(gb_init(&gb));
+
+#ifdef STOP_ON_BLARGG_TEST_END
+    gb.enable_print_debug_serial_message = true;
+#endif
 
     err_exit(gb_load_rom_file(&gb, opts.rom_filename));
 

@@ -3,12 +3,14 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
+#include "ppu.h"
+
 #define SCREEN_WIDTH 1024
 #define SCREEN_HEIGHT 768
 
 #define SCALE 4
 
-static const unsigned long tile_colors[4] = {
+static const unsigned long default_colors[4] = {
     0xFFFFFFFF,
     0xFFAAAAAA,
     0xFF555555,
@@ -37,7 +39,7 @@ static void draw_tile(SDL_Surface *surface, GameBoy *gb, u16 vram_address,
             rc.h = SCALE;
 
             assert(color_index < 4);
-            SDL_FillRect(surface, &rc, tile_colors[color_index]);
+            SDL_FillRect(surface, &rc, default_colors[color_index]);
         }
     }
 }
@@ -77,13 +79,50 @@ static void update_debug_window(SDL_Renderer *debug_renderer,
     SDL_RenderPresent(debug_renderer);
 }
 
+static void update_main_window(SDL_Renderer *renderer, SDL_Texture *texture,
+                               SDL_Surface *screen, GameBoy *gb) {
+    SDL_Rect rc;
+
+    u8 *video_buffer = gb->bus.ppu.video_buffer;
+
+    for (int row = 0; row < RES_Y; ++row) {
+        for (int col = 0; col < RES_X; ++col) {
+            rc.x = col * SCALE;
+            rc.y = row * SCALE;
+            rc.w = SCALE;
+            rc.h = SCALE;
+
+            int i = row * RES_X + col;
+
+            assert(i < VIDEO_BUFFER_LEN);
+            u8 color_index = video_buffer[i];
+
+            // TODO: Wait for valid first frame
+            // assert(color_index < array_len(default_colors));
+            u32 color;
+            if (color_index < array_len(default_colors)) {
+                color = default_colors[color_index];
+            } else {
+                // error - pink
+                color = 0xFFFF00FF;
+            }
+            SDL_FillRect(screen, &rc, color);
+        }
+    }
+
+    SDL_UpdateTexture(texture, NULL, screen->pixels, screen->pitch);
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+}
+
 int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
     assert(gb_mutex);
     assert(gb);
 
     SDL_Window *window;
     SDL_Renderer *renderer;
-    // SDL_Texture *texture;
+    SDL_Texture *texture;
     SDL_Surface *screen;
 
     SDL_Window *debug_window;
@@ -111,7 +150,13 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
                                       &renderer);
     if (err) goto ui_main_exit;
 
-    screen = SDL_GetWindowSurface(window);
+    screen =
+        SDL_CreateRGBSurface(0, SCREEN_WIDTH, SCREEN_HEIGHT, 32, 0x00FF0000,
+                             0x0000FF00, 0x000000FF, 0xFF000000);
+
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888,
+                                SDL_TEXTUREACCESS_STREAMING, SCREEN_WIDTH,
+                                SCREEN_HEIGHT);
 
     // Setup debug screen
 
@@ -144,17 +189,10 @@ int ui_main(pthread_mutex_t *gb_mutex, GameBoy *gb) {
             if (prev_frame != frame_count) {
                 prev_frame = frame_count;
 
+                update_main_window(renderer, texture, screen, gb);
+
                 update_debug_window(debug_renderer, debug_texture, debug_screen,
                                     gb);
-
-                // TODO Main window
-                {
-                    // Fill the surface purple
-                    SDL_FillRect(screen, NULL,
-                                 SDL_MapRGB(screen->format, 0x33, 0x00, 0x33));
-
-                    SDL_UpdateWindowSurface(window);
-                }
             }
 
             // Detect shutdown

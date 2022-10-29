@@ -32,3 +32,6 @@ typedef int64_t i64;
 #define to_u16(hi, lo) ((((u16)(hi)&0xFF) << 8) | ((u16)(lo)&0xFF))
 #define high_byte(word) (((word) >> 8) & 0xFF)
 #define low_byte(word) ((word)&0xFF)
+
+#define maskbit(b) (1 << (b))
+#define getbit(n, b) (((n) & (1 << (b))) != 0)

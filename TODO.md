@@ -12,4 +12,5 @@
   - Union: array access + field access?
 - [ ] Make UI state a struct
 - [ ] video_buffer fixed-size struct
-- [ ] Fifo fixed-size struct
+- [ ] Use `getbit` macro in old code
+- [ ] Can *_tick() functions be simplified to equivalent *_cycle() ?
